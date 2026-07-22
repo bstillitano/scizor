@@ -40,5 +40,7 @@ object Scizor {
     @Suppress("UNUSED_PARAMETER")
     fun start(application: Application) = Unit
 
+    fun wrapAppearance(base: android.content.Context): android.content.Context = base
+
     fun show() = Unit
 }

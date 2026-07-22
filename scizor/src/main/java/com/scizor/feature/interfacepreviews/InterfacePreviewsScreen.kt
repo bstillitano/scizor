@@ -2,15 +2,17 @@ package com.scizor.feature.interfacepreviews
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material.icons.filled.OpenInFull
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -36,26 +38,49 @@ internal fun InterfacePreviewsScreen(navigator: ScizorNavigator) {
         return
     }
 
-    LazyColumn(modifier = Modifier.fillMaxSize()) {
-        items(previews, key = { it.name }) { preview ->
-            ListItem(
-                headlineContent = { Text(preview.name) },
-                trailingContent = {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                },
-                modifier = Modifier.clickable {
-                    navigator.push(preview.name) {
-                        Box(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-                            preview.content()
+    Column(
+        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
+    ) {
+        previews.forEach { preview ->
+            Card(
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                ),
+                modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Box(modifier = Modifier.fillMaxWidth()) {
+                        Column(modifier = Modifier.fillMaxWidth().padding(end = 32.dp)) {
+                            Text(preview.name, style = MaterialTheme.typography.titleMedium)
+                            preview.description?.let {
+                                Text(
+                                    it,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
                         }
+                        Icon(
+                            Icons.Filled.OpenInFull,
+                            contentDescription = "Open full screen",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .clickable {
+                                    navigator.push(preview.name) {
+                                        Box(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+                                            preview.content()
+                                        }
+                                    }
+                                },
+                        )
                     }
-                },
-            )
-            HorizontalDivider()
+                    // Inline rendering of the registered component
+                    Box(modifier = Modifier.fillMaxWidth().padding(top = 16.dp)) {
+                        preview.content()
+                    }
+                }
+            }
         }
     }
 }

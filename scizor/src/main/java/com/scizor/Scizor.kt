@@ -99,6 +99,15 @@ object Scizor {
         applyInvocationGesture(application)
     }
 
+    /**
+     * Wraps [base] with the current appearance font-scale override applied. Call
+     * from your `Activity.attachBaseContext(base)` to let the Appearance screen's
+     * font-scale slider take effect app-wide. Returns [base] unchanged when no
+     * override is set.
+     */
+    fun wrapAppearance(base: Context): Context =
+        com.scizor.feature.appearance.AppearanceOverrides.wrap(base)
+
     /** Opens the debug menu. No-op if [start] has not been called. */
     fun show() {
         val context = application ?: return

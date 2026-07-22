@@ -9,5 +9,6 @@ import androidx.compose.runtime.Composable
  */
 data class InterfacePreview(
     val name: String,
+    val description: String? = null,
     val content: @Composable () -> Unit,
 )

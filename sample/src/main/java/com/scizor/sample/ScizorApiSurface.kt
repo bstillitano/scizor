@@ -34,6 +34,7 @@ internal fun scizorApiSurface(application: Application) {
     // Facade
     Scizor.start(application)
     Scizor.show()
+    val wrapped: android.content.Context = Scizor.wrapAppearance(application)
     Scizor.invocationGesture = ScizorGesture.SHAKE
     Scizor.invocationGesture = ScizorGesture.FLOATING_BUTTON
     Scizor.invocationGesture = ScizorGesture.NONE
@@ -46,6 +47,7 @@ internal fun scizorApiSurface(application: Application) {
     Scizor.fcmToken = "token"
     Scizor.interfacePreviews = listOf(
         com.scizor.feature.interfacepreviews.InterfacePreview("x") {},
+        com.scizor.feature.interfacepreviews.InterfacePreview("x", "desc") {},
     )
     Scizor.deepLinkPresets = listOf(
         com.scizor.feature.deeplink.DeepLinkPreset(name = "n", url = "app://x"),

@@ -51,12 +51,18 @@ class SampleApp : Application() {
         Scizor.fcmToken = "demo-fcm-token-a1b2c3d4e5f6g7h8i9j0"
 
         Scizor.interfacePreviews = listOf(
-            com.scizor.feature.interfacepreviews.InterfacePreview("Primary button") {
+            com.scizor.feature.interfacepreviews.InterfacePreview(
+                "Primary button",
+                "The app's main call-to-action button",
+            ) {
                 androidx.compose.material3.Button(onClick = {}) {
                     androidx.compose.material3.Text("Click me")
                 }
             },
-            com.scizor.feature.interfacepreviews.InterfacePreview("Loading spinner") {
+            com.scizor.feature.interfacepreviews.InterfacePreview(
+                "Loading spinner",
+                "Indeterminate progress indicator",
+            ) {
                 androidx.compose.material3.CircularProgressIndicator()
             },
         )
