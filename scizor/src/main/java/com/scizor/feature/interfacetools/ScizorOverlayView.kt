@@ -3,6 +3,7 @@ package com.scizor.feature.interfacetools
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Paint
+import android.graphics.PointF
 import android.view.Choreographer
 import android.view.MotionEvent
 import android.view.View
@@ -10,14 +11,22 @@ import android.view.ViewGroup
 
 /**
  * A pass-through overlay added on top of each Activity's content. Draws the
- * active interface tools (grid, view frames, view sizes, touch ripples, FPS)
- * without consuming touch events — [onTouchEvent] always returns false.
+ * active interface tools (grid, view frames, view sizes, touch visualiser, FPS).
+ *
+ * The touch visualiser tracks every active pointer's live position — fed from the
+ * window's `dispatchTouchEvent` via [feedTouch] so it follows dragging fingers
+ * rather than only marking taps. The view itself never consumes touches.
  */
 internal class ScizorOverlayView(context: Context) : View(context) {
 
     private data class Touch(val x: Float, val y: Float, val at: Long)
 
-    private val touchPoints = ArrayDeque<Touch>()
+    /** Live position of each active pointer, keyed by pointer id — follows the finger. */
+    private val activePointers = HashMap<Int, PointF>()
+
+    /** Fading marks left behind when a pointer lifts. */
+    private val trails = ArrayDeque<Touch>()
+
     private var lastFrameNanos = 0L
     private var currentFps = 0
     private val fpsHistory = ArrayDeque<Int>()
@@ -37,6 +46,11 @@ internal class ScizorOverlayView(context: Context) : View(context) {
         isAntiAlias = true
     }
     private val touchPaint = Paint().apply { style = Paint.Style.FILL; isAntiAlias = true }
+    private val touchRingPaint = Paint().apply {
+        style = Paint.Style.STROKE
+        isAntiAlias = true
+        strokeWidth = 2f * density
+    }
     private val fpsBg = Paint().apply { color = 0xCC000000.toInt() }
     private val fpsText = Paint().apply {
         color = 0xFFFFFFFF.toInt()
@@ -67,13 +81,45 @@ internal class ScizorOverlayView(context: Context) : View(context) {
         Choreographer.getInstance().postFrameCallback(frameCallback)
     }
 
-    override fun onTouchEvent(event: MotionEvent): Boolean {
-        if (InterfaceToolkit.touches.value && event.actionMasked == MotionEvent.ACTION_DOWN) {
-            touchPoints.addLast(Touch(event.x, event.y, System.currentTimeMillis()))
-            InterfaceToolkit.logTouch(event.x, event.y)
-            invalidate()
+    /**
+     * Observes a touch event without consuming it (called from the window callback).
+     * Updates each active pointer's live position so the visualiser tracks drags.
+     */
+    fun feedTouch(event: MotionEvent) {
+        if (!InterfaceToolkit.touches.value) {
+            if (activePointers.isNotEmpty()) {
+                activePointers.clear()
+                invalidate()
+            }
+            return
         }
-        return false
+        // Window-callback coordinates are window-relative; map into overlay-local space.
+        val loc = IntArray(2).also { getLocationInWindow(it) }
+        fun x(i: Int) = event.getX(i) - loc[0]
+        fun y(i: Int) = event.getY(i) - loc[1]
+        val now = System.currentTimeMillis()
+        when (event.actionMasked) {
+            MotionEvent.ACTION_DOWN, MotionEvent.ACTION_POINTER_DOWN -> {
+                val i = event.actionIndex
+                activePointers[event.getPointerId(i)] = PointF(x(i), y(i))
+                InterfaceToolkit.logTouch(x(i), y(i))
+            }
+            MotionEvent.ACTION_MOVE -> {
+                for (i in 0 until event.pointerCount) {
+                    val id = event.getPointerId(i)
+                    activePointers[id]?.set(x(i), y(i)) ?: run { activePointers[id] = PointF(x(i), y(i)) }
+                }
+            }
+            MotionEvent.ACTION_UP, MotionEvent.ACTION_POINTER_UP -> {
+                activePointers.remove(event.getPointerId(event.actionIndex))
+                    ?.let { trails.addLast(Touch(it.x, it.y, now)) }
+            }
+            MotionEvent.ACTION_CANCEL -> {
+                activePointers.values.forEach { trails.addLast(Touch(it.x, it.y, now)) }
+                activePointers.clear()
+            }
+        }
+        invalidate()
     }
 
     override fun onDraw(canvas: Canvas) {
@@ -134,18 +180,27 @@ internal class ScizorOverlayView(context: Context) : View(context) {
     }
 
     private fun drawTouches(canvas: Canvas) {
-        val fadeMs = InterfaceToolkit.touchFadeMs.value.toLong()
-        val maxRadius = InterfaceToolkit.touchRadiusDp.value * density
+        val fadeMs = InterfaceToolkit.touchFadeMs.value.toLong().coerceAtLeast(1)
+        val radius = InterfaceToolkit.touchRadiusDp.value * density
         val now = System.currentTimeMillis()
-        while (touchPoints.isNotEmpty() && now - touchPoints.first().at > fadeMs) {
-            touchPoints.removeFirst()
+
+        // Fading marks for lifted fingers (expand + fade out).
+        while (trails.isNotEmpty() && now - trails.first().at > fadeMs) trails.removeFirst()
+        trails.forEach { t ->
+            val progress = (now - t.at) / fadeMs.toFloat()
+            val alpha = (150 * (1f - progress)).toInt().coerceIn(0, 255)
+            touchPaint.color = (alpha shl 24) or TOUCH_RGB
+            canvas.drawCircle(t.x, t.y, radius * (1f + progress), touchPaint)
         }
-        touchPoints.forEach { touch ->
-            val progress = (now - touch.at) / fadeMs.toFloat()
-            val radius = maxRadius * (0.5f + progress)
-            val alpha = (170 * (1f - progress)).toInt().coerceIn(0, 255)
-            touchPaint.color = (alpha shl 24) or 0x00FF4081
-            canvas.drawCircle(touch.x, touch.y, radius, touchPaint)
+
+        // Active fingers: a solid spot with a ring and crosshair, exactly under each pointer.
+        activePointers.values.forEach { p ->
+            touchPaint.color = (0x66 shl 24) or TOUCH_RGB
+            canvas.drawCircle(p.x, p.y, radius, touchPaint)
+            touchRingPaint.color = (0xFF shl 24) or TOUCH_RGB
+            canvas.drawCircle(p.x, p.y, radius, touchRingPaint)
+            canvas.drawLine(p.x - radius, p.y, p.x + radius, p.y, touchRingPaint)
+            canvas.drawLine(p.x, p.y - radius, p.x, p.y + radius, touchRingPaint)
         }
     }
 
@@ -171,5 +226,10 @@ internal class ScizorOverlayView(context: Context) : View(context) {
         }
         canvas.drawRect(boxLeft, boxTop, boxLeft + boxWidth, boxTop + boxHeight, fpsBg)
         canvas.drawText(label, boxLeft + pad, boxTop + pad + fpsText.textSize, fpsText)
+    }
+
+    private companion object {
+        /** Pink RGB for touch markers; alpha is applied per-draw. */
+        const val TOUCH_RGB = 0xFF4081
     }
 }
