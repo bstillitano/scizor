@@ -22,7 +22,11 @@ android {
 }
 
 dependencies {
-    // Only what the mirrored public signatures require.
+    // Only what the mirrored public signatures require — no Compose UI, no DataStore.
     implementation(libs.okhttp)
     implementation(libs.coroutines.android)
+
+    val composeBom = platform(libs.compose.bom)
+    implementation(composeBom)
+    implementation(libs.compose.ui)
 }
