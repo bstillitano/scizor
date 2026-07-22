@@ -3,10 +3,14 @@ package com.scizor.ui
 import android.content.Context
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Extension
+import androidx.compose.material.icons.filled.CheckBoxOutlineBlank
+import androidx.compose.material.icons.filled.Straighten
+import androidx.compose.material.icons.filled.Slideshow
 import androidx.lifecycle.ViewModel
 import com.scizor.Scizor
 import com.scizor.core.FeatureRegistry
 import com.scizor.feature.deviceinfo.DeviceInfo
+import com.scizor.feature.interfacetools.InterfaceToolkit
 import com.scizor.feature.network.IpAddress
 
 /**
@@ -61,10 +65,24 @@ internal class MenuViewModel : ViewModel() {
                 val rows = mutableListOf<MenuRow>()
                 // Scyther shows the device's public IP inline atop the Networking section.
                 if (section == "Networking") {
-                    rows += MenuRow.Info("ip_address", "IP Address", ipAddress ?: "Loading…")
+                    rows += MenuRow.Info("ip_address", "IP Address", ipAddress ?: LOADING_PLACEHOLDER)
                 }
                 if (section == "Notifications") {
                     Scizor.fcmToken?.let { rows += MenuRow.Info("fcm_token", "FCM Token", it) }
+                }
+                if (section == "UI/UX") {
+                    rows += MenuRow.Toggle(
+                        "toggle_frames", "View frames", "Outline every view",
+                        Icons.Filled.CheckBoxOutlineBlank, InterfaceToolkit.frames, InterfaceToolkit::setFrames,
+                    )
+                    rows += MenuRow.Toggle(
+                        "toggle_sizes", "View sizes", "Width × height labels",
+                        Icons.Filled.Straighten, InterfaceToolkit.sizes, InterfaceToolkit::setSizes,
+                    )
+                    rows += MenuRow.Toggle(
+                        "toggle_slow", "Slow animations", "Scale durations 10×",
+                        Icons.Filled.Slideshow, InterfaceToolkit.slowAnimations, InterfaceToolkit::setSlowAnimations,
+                    )
                 }
                 rows += entries.map { entry ->
                     MenuRow.Action(

@@ -2,6 +2,7 @@ package com.scizor.ui
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.vector.ImageVector
+import kotlinx.coroutines.flow.StateFlow
 
 /** What happens when a menu item is tapped. */
 internal sealed interface MenuAction {
@@ -35,6 +36,16 @@ internal sealed interface MenuRow {
         val action: MenuAction,
         /** The registry id this row can be pinned/unpinned by, or null if not pinnable. */
         val pinnableId: String? = null,
+    ) : MenuRow
+
+    /** An inline on/off switch (quick UI-tool toggles surfaced in the menu). */
+    data class Toggle(
+        override val id: String,
+        val title: String,
+        val subtitle: String?,
+        val icon: ImageVector,
+        val flow: StateFlow<Boolean>,
+        val onChange: (Boolean) -> Unit,
     ) : MenuRow
 }
 

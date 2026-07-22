@@ -23,6 +23,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Switch
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -113,6 +115,7 @@ private fun SegmentedGroup(rows: List<MenuRow>, navigator: ScizorNavigator) {
             when (row) {
                 is MenuRow.Info -> InfoSegment(row, shapes)
                 is MenuRow.Action -> ActionSegment(row, shapes, navigator)
+                is MenuRow.Toggle -> ToggleSegment(row, shapes)
             }
         }
     }
@@ -127,11 +130,19 @@ private fun InfoSegment(row: MenuRow.Info, shapes: androidx.compose.material3.Li
             containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
         ),
         trailingContent = {
-            Text(
-                text = row.value,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            if (row.value == LOADING_PLACEHOLDER) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(16.dp),
+                    strokeWidth = 2.dp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            } else {
+                Text(
+                    text = row.value,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         },
         modifier = Modifier.combinedClickable(
             onClick = {},
@@ -140,6 +151,25 @@ private fun InfoSegment(row: MenuRow.Info, shapes: androidx.compose.material3.Li
             },
         ),
         content = { Text(row.label) },
+    )
+}
+
+/** Sentinel value a still-resolving [MenuRow.Info] carries; rendered as a spinner. */
+internal const val LOADING_PLACEHOLDER = "Loading…"
+
+@Composable
+private fun ToggleSegment(row: MenuRow.Toggle, shapes: androidx.compose.material3.ListItemShapes) {
+    val checked by row.flow.collectAsStateWithLifecycle()
+    SegmentedListItem(
+        shapes = shapes,
+        colors = ListItemDefaults.segmentedColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+        ),
+        leadingContent = { LeadingIcon(row.icon) },
+        supportingContent = row.subtitle?.let { { Text(it) } },
+        trailingContent = { Switch(checked = checked, onCheckedChange = row.onChange) },
+        modifier = Modifier.combinedClickable(onClick = { row.onChange(!checked) }, onLongClick = {}),
+        content = { Text(row.title) },
     )
 }
 
