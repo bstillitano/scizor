@@ -7,22 +7,38 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
-private val ScizorRed = Color(0xFFD23B3B)
-private val ScizorRedDark = Color(0xFFE85D5D)
+// Accent matches Scyther's iOS system blue.
+private val ScizorBlue = Color(0xFF007AFF)
+private val ScizorBlueDark = Color(0xFF0A84FF)
 
+// iOS-style "systemGrouped" surfaces: a tinted background with white/dark cards.
 private val LightColors = lightColorScheme(
-    primary = ScizorRed,
-    secondary = Color(0xFF4A4A4A),
+    primary = ScizorBlue,
+    onPrimary = Color.White,
+    background = Color(0xFFF2F2F7),
+    onBackground = Color(0xFF000000),
+    surface = Color(0xFFFFFFFF),
+    onSurface = Color(0xFF000000),
+    surfaceVariant = Color(0xFFFFFFFF),
+    onSurfaceVariant = Color(0xFF8E8E93),
+    outlineVariant = Color(0xFFC6C6C8),
 )
 
 private val DarkColors = darkColorScheme(
-    primary = ScizorRedDark,
-    secondary = Color(0xFFB0B0B0),
+    primary = ScizorBlueDark,
+    onPrimary = Color.White,
+    background = Color(0xFF000000),
+    onBackground = Color(0xFFFFFFFF),
+    surface = Color(0xFF1C1C1E),
+    onSurface = Color(0xFFFFFFFF),
+    surfaceVariant = Color(0xFF1C1C1E),
+    onSurfaceVariant = Color(0xFF8E8E93),
+    outlineVariant = Color(0xFF38383A),
 )
 
 /**
  * Material 3 theme for all Scizor UI. Follows the host device's dark/light
- * setting so the debug menu blends with the environment it is launched over.
+ * setting and mirrors Scyther's grouped-inset visual language.
  */
 @Composable
 internal fun ScizorTheme(

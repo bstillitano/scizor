@@ -12,15 +12,28 @@ internal sealed interface MenuAction {
     data class Run(val block: () -> Unit) : MenuAction
 }
 
-internal data class MenuItemUi(
-    val id: String,
-    val title: String,
-    val subtitle: String?,
-    val icon: ImageVector,
-    val action: MenuAction,
-)
+/** A single row within a grouped menu card. */
+internal sealed interface MenuRow {
+    val id: String
+
+    /** A read-only label/value pair, shown inline (device & app facts). */
+    data class Info(
+        override val id: String,
+        val label: String,
+        val value: String,
+    ) : MenuRow
+
+    /** A navigable feature or a runnable developer option. */
+    data class Action(
+        override val id: String,
+        val title: String,
+        val subtitle: String?,
+        val icon: ImageVector,
+        val action: MenuAction,
+    ) : MenuRow
+}
 
 internal data class MenuGroupUi(
     val title: String,
-    val items: List<MenuItemUi>,
+    val rows: List<MenuRow>,
 )

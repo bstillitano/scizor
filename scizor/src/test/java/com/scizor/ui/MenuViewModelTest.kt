@@ -18,23 +18,42 @@ class MenuViewModelTest {
     }
 
     @Test
-    fun `built-in features are grouped into sections`() {
-        val groups = MenuViewModel().groups()
-        val titles = groups.flatMap { it.items }.map { it.title }
-        assertTrue(titles.contains("Device & App Info"))
+    fun `device and application facts are rendered inline`() {
+        val context = RuntimeEnvironment.getApplication()
+        val groups = MenuViewModel().groups(context)
+
+        val device = groups.first { it.title == "Device" }
+        assertTrue(device.rows.filterIsInstance<MenuRow.Info>().any { it.label == "Model" })
+
+        val application = groups.first { it.title == "Application" }
+        assertTrue(application.rows.filterIsInstance<MenuRow.Info>().any { it.label == "Package" })
+    }
+
+    @Test
+    fun `feature screens are grouped into sections`() {
+        val context = RuntimeEnvironment.getApplication()
+        val titles = MenuViewModel().groups(context)
+            .flatMap { it.rows }
+            .filterIsInstance<MenuRow.Action>()
+            .map { it.title }
+
         assertTrue(titles.contains("Network Logger"))
         assertTrue(titles.contains("Environment Variables"))
+        assertTrue(titles.contains("Feature Flags"))
     }
 
     @Test
     fun `developer options appear in a Developer section`() {
+        val context = RuntimeEnvironment.getApplication()
         Scizor.developerOptions = listOf(
             DeveloperOption(title = "Reset onboarding") {},
         )
 
-        val groups = MenuViewModel().groups()
+        val groups = MenuViewModel().groups(context)
         val developer = groups.first { it.title == "Developer" }
-        assertTrue(developer.items.any { it.title == "Reset onboarding" })
+        assertTrue(
+            developer.rows.filterIsInstance<MenuRow.Action>().any { it.title == "Reset onboarding" },
+        )
 
         Scizor.developerOptions = emptyList()
     }
