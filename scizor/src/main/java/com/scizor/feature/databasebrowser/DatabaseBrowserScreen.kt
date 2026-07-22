@@ -19,6 +19,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.TableChart
@@ -148,6 +149,7 @@ private fun TableDataScreen(dbName: String, table: String, navigator: ScizorNavi
         DatabaseBrowser.rows(context, dbName, table, PAGE_SIZE, offset)
     }
     val pkColumn = schema.columns.firstOrNull { it.primaryKey }?.name
+    var adding by remember { mutableStateOf(false) }
 
     Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
         SectionHeader("Schema")
@@ -222,6 +224,28 @@ private fun TableDataScreen(dbName: String, table: String, navigator: ScizorNavi
                 ) { Text("Next") }
             }
         }
+
+        OutlinedButton(
+            onClick = { adding = true },
+            modifier = Modifier.padding(16.dp),
+        ) {
+            Icon(Icons.Filled.Add, null)
+            Text("Add record", modifier = Modifier.padding(start = 8.dp))
+        }
+    }
+
+    if (adding) {
+        EditRecordDialog(
+            columns = schema.columns.map { it.name },
+            row = emptyList(),
+            title = "Add record",
+            onDismiss = { adding = false },
+            onSave = { values ->
+                DatabaseBrowser.insertRow(context, dbName, table, values)
+                adding = false
+                refreshKey++
+            },
+        )
     }
 }
 
@@ -419,13 +443,14 @@ private fun EditRecordDialog(
     row: List<String>,
     onDismiss: () -> Unit,
     onSave: (Map<String, String>) -> Unit,
+    title: String = "Edit record",
 ) {
     val edited = remember {
         columns.mapIndexed { i, col -> col to mutableStateOf(row.getOrElse(i) { "" }) }.toMap()
     }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Edit record") },
+        title = { Text(title) },
         text = {
             Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                 columns.forEach { col ->

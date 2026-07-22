@@ -3,7 +3,9 @@
 package com.scizor.feature.location
 
 import android.widget.Toast
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -29,6 +31,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -36,6 +39,34 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.scizor.ui.SectionHeader
 import com.scizor.ui.SegmentedColumn
 import com.scizor.ui.scizorSegmentedColors
+
+@Composable
+private fun MiniMap(lat: Double, lng: Double) {
+    val grid = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.25f)
+    val dot = MaterialTheme.colorScheme.primary
+    val surface = MaterialTheme.colorScheme.surfaceContainerHigh
+    Canvas(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(140.dp)
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+    ) {
+        drawRect(color = surface)
+        for (i in 1 until 6) {
+            val x = size.width * i / 6f
+            drawLine(grid, Offset(x, 0f), Offset(x, size.height))
+        }
+        for (i in 1 until 6) {
+            val y = size.height * i / 6f
+            drawLine(grid, Offset(0f, y), Offset(size.width, y))
+        }
+        // Equirectangular projection: lng [-180,180] → x, lat [90,-90] → y
+        val px = ((lng + 180.0) / 360.0).toFloat() * size.width
+        val py = ((90.0 - lat) / 180.0).toFloat() * size.height
+        drawCircle(color = dot.copy(alpha = 0.25f), radius = 12.dp.toPx(), center = Offset(px, py))
+        drawCircle(color = dot, radius = 5.dp.toPx(), center = Offset(px, py))
+    }
+}
 
 @Composable
 internal fun LocationSpooferScreen() {
@@ -95,6 +126,7 @@ internal fun LocationSpooferScreen() {
         }
 
         active?.let { mock ->
+            MiniMap(mock.latitude, mock.longitude)
             SegmentedColumn(items = listOf(mock)) { m, shapes ->
                 SegmentedListItem(
                     shapes = shapes,
