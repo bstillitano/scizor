@@ -214,7 +214,7 @@ internal fun registerBuiltInFeatures() {
             subtitle = "Grid, view bounds, touches, FPS",
             icon = Icons.Filled.Dashboard,
             section = "UI/UX",
-            screen = { UiToolsScreen() },
+            screen = { UiToolsScreen(it) },
         ),
     )
     FeatureRegistry.register(
