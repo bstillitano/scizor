@@ -13,9 +13,13 @@ import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -23,9 +27,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -33,8 +41,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.input.ImeAction
+import com.scizor.ui.LocalScizorSearch
 import com.scizor.ui.MenuScreen
 import com.scizor.ui.ScizorNavigator
+import com.scizor.ui.ScizorSearchController
 import com.scizor.ui.ScizorTheme
 
 /**
@@ -58,38 +72,80 @@ class ScizorActivity : ComponentActivity() {
 @Composable
 private fun ScizorHost(onClose: () -> Unit) {
     val navigator = remember { ScizorNavigator() }
+    val search = remember { ScizorSearchController() }
     val title by remember {
         androidx.compose.runtime.derivedStateOf { navigator.current?.title ?: "Scizor" }
     }
 
     BackHandler(enabled = true) {
-        if (!navigator.pop()) onClose()
+        when {
+            search.active -> search.collapse()
+            !navigator.pop() -> onClose()
+        }
     }
 
-    Scaffold(
+    CompositionLocalProvider(LocalScizorSearch provides search) {
+        Scaffold(
         containerColor = MaterialTheme.colorScheme.surface,
         topBar = {
             TopAppBar(
                 title = {
-                    Text(text = title)
+                    if (search.active) {
+                        val focus = remember { FocusRequester() }
+                        LaunchedEffect(Unit) { focus.requestFocus() }
+                        TextField(
+                            value = search.query,
+                            onValueChange = { search.query = it },
+                            placeholder = { Text(search.placeholder ?: "Search") },
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                            keyboardActions = KeyboardActions(),
+                            colors = TextFieldDefaults.colors(
+                                focusedContainerColor = Color.Transparent,
+                                unfocusedContainerColor = Color.Transparent,
+                                focusedIndicatorColor = Color.Transparent,
+                                unfocusedIndicatorColor = Color.Transparent,
+                            ),
+                            modifier = Modifier.fillMaxWidth().focusRequester(focus),
+                        )
+                    } else {
+                        Text(text = title)
+                    }
                 },
                 navigationIcon = {
                     val atRoot = navigator.stack.isEmpty()
-                    IconButton(onClick = { if (!navigator.pop()) onClose() }) {
+                    IconButton(onClick = {
+                        when {
+                            search.active -> search.collapse()
+                            !navigator.pop() -> onClose()
+                        }
+                    }) {
                         Icon(
-                            imageVector = if (atRoot) {
+                            imageVector = if (atRoot && !search.active) {
                                 Icons.Filled.Close
                             } else {
                                 Icons.AutoMirrored.Filled.ArrowBack
                             },
-                            contentDescription = if (atRoot) "Close" else "Back",
+                            contentDescription = when {
+                                search.active -> "Close search"
+                                atRoot -> "Close"
+                                else -> "Back"
+                            },
                         )
+                    }
+                },
+                actions = {
+                    if (search.placeholder != null && !search.active) {
+                        IconButton(onClick = { search.active = true }) {
+                            Icon(Icons.Filled.Search, contentDescription = "Search")
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface,
                     titleContentColor = MaterialTheme.colorScheme.onSurface,
                     navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
+                    actionIconContentColor = MaterialTheme.colorScheme.onSurface,
                 ),
             )
         },
@@ -127,6 +183,7 @@ private fun ScizorHost(onClose: () -> Unit) {
                     }
                 }
             }
+        }
         }
     }
 }

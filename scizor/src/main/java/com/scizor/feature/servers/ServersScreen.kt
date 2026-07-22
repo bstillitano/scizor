@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.scizor.ui.CopyMenuHost
+import com.scizor.ui.rememberSearchQuery
 import com.scizor.ui.SectionHeader
 import com.scizor.ui.SegmentedColumn
 import com.scizor.ui.scizorSegmentedColors
@@ -38,7 +39,7 @@ import com.scizor.ui.scizorSegmentedColors
 @Composable
 internal fun ServersScreen(viewModel: ServersViewModel = viewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    var query by remember { mutableStateOf("") }
+    val query = rememberSearchQuery("Search name or variable key/values")
 
     if (state.environments.isEmpty()) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -74,16 +75,6 @@ internal fun ServersScreen(viewModel: ServersViewModel = viewModel()) {
             .fillMaxSize()
             .verticalScroll(rememberScrollState()),
     ) {
-        OutlinedTextField(
-            value = query,
-            onValueChange = { query = it },
-            label = { Text("Search name or variable key/values") },
-            singleLine = true,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 4.dp),
-        )
-
         SectionHeader("Configuration")
         if (configs.isEmpty()) {
             EmptyRow("No matching configurations")

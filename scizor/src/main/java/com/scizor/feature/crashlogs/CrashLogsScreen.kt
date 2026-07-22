@@ -23,7 +23,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -42,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import com.scizor.feature.network.TextReaderScreen
 import com.scizor.ui.ScizorNavigator
 import com.scizor.ui.SectionHeader
+import com.scizor.ui.rememberSearchQuery
 import com.scizor.ui.SegmentInset
 import com.scizor.ui.SegmentedColumn
 import com.scizor.ui.scizorSegmentedColors
@@ -52,7 +52,7 @@ import java.util.Date
 internal fun CrashLogsScreen(navigator: ScizorNavigator) {
     val context = LocalContext.current
     var refresh by remember { mutableIntStateOf(0) }
-    var query by remember { mutableStateOf("") }
+    val query = rememberSearchQuery("Search crashes")
     val crashes = remember(refresh) { CrashLogger.crashes(context) }
     val filtered = crashes.filter {
         query.isBlank() || it.type.contains(query, true) || it.message.contains(query, true)
@@ -63,27 +63,20 @@ internal fun CrashLogsScreen(navigator: ScizorNavigator) {
             modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            OutlinedTextField(
-                value = query,
-                onValueChange = { query = it },
-                label = { Text("Search crashes") },
-                singleLine = true,
+            TextButton(
+                onClick = {
+                    CrashLogger.recordForDemo(context, RuntimeException("Recorded test crash from Scizor"))
+                    refresh++
+                },
                 modifier = Modifier.weight(1f),
-            )
+            ) {
+                Text("Record test crash")
+            }
             if (crashes.isNotEmpty()) {
                 IconButton(onClick = { CrashLogger.clear(context); refresh++ }) {
                     Icon(Icons.Filled.Delete, contentDescription = "Clear all")
                 }
             }
-        }
-        TextButton(
-            onClick = {
-                CrashLogger.recordForDemo(context, RuntimeException("Recorded test crash from Scizor"))
-                refresh++
-            },
-            modifier = Modifier.padding(horizontal = 12.dp),
-        ) {
-            Text("Record test crash")
         }
 
         if (filtered.isEmpty()) {

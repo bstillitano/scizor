@@ -4,6 +4,7 @@ import android.content.Intent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -11,7 +12,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -28,13 +28,14 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
+import com.scizor.ui.rememberSearchQuery
 
 /** A full-screen, selectable, searchable text reader with highlight + share. */
 @Composable
 internal fun TextReaderScreen(text: String) {
     val context = LocalContext.current
     val clipboard = LocalClipboardManager.current
-    var query by remember { mutableStateOf("") }
+    val query = rememberSearchQuery("Search")
     val highlightColor = MaterialTheme.colorScheme.tertiary
 
     val annotated = remember(text, query, highlightColor) { highlight(text, query, highlightColor) }
@@ -44,30 +45,19 @@ internal fun TextReaderScreen(text: String) {
 
     Column(modifier = Modifier.fillMaxSize()) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            OutlinedTextField(
-                value = query,
-                onValueChange = { query = it },
-                label = { Text("Search") },
-                singleLine = true,
-                modifier = Modifier.weight(1f),
-            )
-        }
-        Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp),
             horizontalArrangement = Arrangement.End,
+            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
         ) {
             if (query.isNotBlank()) {
                 Text(
                     "$matches match${if (matches == 1) "" else "es"}",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.weight(1f).padding(top = 12.dp),
+                    modifier = Modifier.weight(1f).padding(start = 4.dp),
                 )
             } else {
-                Modifier.weight(1f)
+                Spacer(Modifier.weight(1f))
             }
             TextButton(onClick = { clipboard.setText(AnnotatedString(text)) }) { Text("Copy") }
             TextButton(onClick = { share(context, text) }) { Text("Share") }

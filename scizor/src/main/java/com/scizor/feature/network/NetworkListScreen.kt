@@ -3,6 +3,7 @@ package com.scizor.feature.network
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
@@ -21,7 +22,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -36,6 +36,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.scizor.ui.rememberSearchQuery
 import com.scizor.ui.ScizorNavigator
 
 /** Entry point: the transaction list; tapping a row pushes the detail page. */
@@ -60,7 +61,7 @@ private fun NetworkList(
     onSelect: (NetworkTransaction) -> Unit,
     onClear: () -> Unit,
 ) {
-    var query by remember { mutableStateOf("") }
+    val query = rememberSearchQuery("Search URL, method or status")
     val filtered = transactions.filter {
         query.isBlank() ||
             it.url.contains(query, ignoreCase = true) ||
@@ -71,18 +72,9 @@ private fun NetworkList(
 
     Column(modifier = Modifier.fillMaxSize()) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 4.dp),
-            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
+            horizontalArrangement = Arrangement.End,
         ) {
-            OutlinedTextField(
-                value = query,
-                onValueChange = { query = it },
-                label = { Text("Search URL, method or status") },
-                singleLine = true,
-                modifier = Modifier.weight(1f),
-            )
             IconButton(onClick = onClear) {
                 Icon(Icons.Filled.Delete, contentDescription = "Clear all")
             }

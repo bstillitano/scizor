@@ -48,6 +48,7 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.scizor.ui.rememberSearchQuery
 import com.scizor.ui.ScizorNavigator
 import com.scizor.ui.SectionHeader
 import com.scizor.ui.SegmentedColumn
@@ -84,16 +85,9 @@ internal fun DatabaseBrowserScreen(navigator: ScizorNavigator) {
 private fun TablesScreen(dbName: String, navigator: ScizorNavigator) {
     val context = LocalContext.current
     val tables = remember(dbName) { DatabaseBrowser.tables(context, dbName) }
-    var query by remember { mutableStateOf("") }
+    val query = rememberSearchQuery("Search tables")
 
     Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-        OutlinedTextField(
-            value = query,
-            onValueChange = { query = it },
-            label = { Text("Search tables") },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
-        )
         SectionHeader("Query")
         SegmentedColumn(items = listOf("sql")) { _, shapes ->
             SegmentedListItem(
@@ -141,7 +135,7 @@ private fun TableDataScreen(dbName: String, table: String, navigator: ScizorNavi
     val context = LocalContext.current
     var refreshKey by remember { mutableIntStateOf(0) }
     var offset by remember { mutableIntStateOf(0) }
-    var query by remember { mutableStateOf("") }
+    val query = rememberSearchQuery("Filter this page")
 
     val total = remember(dbName, table, refreshKey) { DatabaseBrowser.count(context, dbName, table) }
     val schema = remember(dbName, table) { DatabaseBrowser.schema(context, dbName, table) }
@@ -163,14 +157,6 @@ private fun TableDataScreen(dbName: String, table: String, navigator: ScizorNavi
                 content = { Text("Columns & indexes") },
             )
         }
-
-        OutlinedTextField(
-            value = query,
-            onValueChange = { query = it },
-            label = { Text("Filter this page") },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
-        )
 
         val shown = if (query.isBlank()) data.rows else data.rows.filter { row ->
             row.any { it.contains(query, true) }

@@ -19,7 +19,6 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -33,6 +32,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.scizor.ui.rememberSearchQuery
 import com.scizor.ui.SectionHeader
 import com.scizor.ui.SegmentedColumn
 import com.scizor.ui.scizorSegmentedColors
@@ -42,7 +42,7 @@ private enum class GlobalRow { ENABLE, RESET }
 @Composable
 internal fun FeatureFlagsScreen(viewModel: FeatureFlagsViewModel = viewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    var query by remember { mutableStateOf("") }
+    val query = rememberSearchQuery("Search toggles")
 
     Column(
         modifier = Modifier
@@ -85,16 +85,6 @@ internal fun FeatureFlagsScreen(viewModel: FeatureFlagsViewModel = viewModel()) 
             )
             return@Column
         }
-
-        OutlinedTextField(
-            value = query,
-            onValueChange = { query = it },
-            label = { Text("Search toggles") },
-            singleLine = true,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 4.dp),
-        )
 
         val filtered = state.flags.filter { it.title.contains(query, ignoreCase = true) }
         val pinned = filtered.filter { it.pinned }

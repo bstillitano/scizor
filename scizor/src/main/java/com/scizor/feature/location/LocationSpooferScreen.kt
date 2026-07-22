@@ -36,6 +36,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.scizor.ui.rememberSearchQuery
 import com.scizor.ui.SectionHeader
 import com.scizor.ui.SegmentedColumn
 import com.scizor.ui.scizorSegmentedColors
@@ -75,7 +76,7 @@ internal fun LocationSpooferScreen() {
     val last = remember { LocationSpoofer.lastLocation() }
     var lat by remember { mutableStateOf(last?.latitude?.toString().orEmpty()) }
     var lng by remember { mutableStateOf(last?.longitude?.toString().orEmpty()) }
-    var query by remember { mutableStateOf("") }
+    val query = rememberSearchQuery("Search cities")
 
     fun apply(latitude: Double, longitude: Double, label: String) {
         val ok = LocationSpoofer.start(context, latitude, longitude, label)
@@ -182,13 +183,6 @@ internal fun LocationSpooferScreen() {
         }
 
         SectionHeader("Cities")
-        OutlinedTextField(
-            value = query,
-            onValueChange = { query = it },
-            label = { Text("Search cities") },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
-        )
         val cities = LocationSpoofer.presets.filter { query.isBlank() || it.name.contains(query, true) }
         SegmentedColumn(items = cities) { preset, shapes ->
             SegmentedListItem(

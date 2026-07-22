@@ -18,7 +18,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -32,6 +31,7 @@ import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import com.scizor.ui.ScizorNavigator
+import com.scizor.ui.rememberSearchQuery
 import com.scizor.ui.SectionHeader
 import com.scizor.ui.SegmentedColumn
 import com.scizor.ui.scizorSegmentedColors
@@ -41,7 +41,7 @@ import java.util.Date
 @Composable
 internal fun KeystoreScreen(navigator: ScizorNavigator) {
     val entries = remember { KeystoreBrowser.entries() }
-    var query by remember { mutableStateOf("") }
+    val query = rememberSearchQuery("Search aliases")
 
     if (entries.isEmpty()) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -60,13 +60,6 @@ internal fun KeystoreScreen(navigator: ScizorNavigator) {
     val certs = filtered.filter { it.type != "Key" }
 
     Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-        OutlinedTextField(
-            value = query,
-            onValueChange = { query = it },
-            label = { Text("Search aliases") },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
-        )
         if (keys.isNotEmpty()) {
             SectionHeader("Keys")
             EntryList(keys, navigator)

@@ -19,7 +19,6 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -37,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.scizor.ui.rememberSearchQuery
 
 @Composable
 internal fun ConsoleScreen(viewModel: ConsoleViewModel = viewModel()) {
@@ -44,6 +44,10 @@ internal fun ConsoleScreen(viewModel: ConsoleViewModel = viewModel()) {
     val filter by viewModel.filter.collectAsStateWithLifecycle()
     val autoScroll by viewModel.autoScroll.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
+
+    // Drive the app-bar search into the view model's filter.
+    val query = rememberSearchQuery("Filter")
+    LaunchedEffect(query) { viewModel.setQuery(query) }
 
     LaunchedEffect(entries.size, autoScroll) {
         if (autoScroll && entries.isNotEmpty()) listState.animateScrollToItem(entries.lastIndex)
@@ -78,18 +82,9 @@ internal fun ConsoleScreen(viewModel: ConsoleViewModel = viewModel()) {
         }
 
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 4.dp),
-            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
+            horizontalArrangement = Arrangement.End,
         ) {
-            OutlinedTextField(
-                value = filter.query,
-                onValueChange = viewModel::setQuery,
-                label = { Text("Filter") },
-                singleLine = true,
-                modifier = Modifier.weight(1f),
-            )
             IconButton(onClick = viewModel::clear) {
                 Icon(Icons.Filled.Delete, contentDescription = "Clear")
             }

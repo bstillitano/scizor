@@ -46,6 +46,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.scizor.ui.rememberSearchQuery
 import com.scizor.ui.ScizorNavigator
 import com.scizor.ui.SectionHeader
 import com.scizor.ui.SegmentInset
@@ -58,7 +59,7 @@ internal fun PreferencesScreen(
     viewModel: PreferencesViewModel = viewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    var query by remember { mutableStateOf("") }
+    val query = rememberSearchQuery("Search keys and values")
     var editing by remember { mutableStateOf<PrefEntry?>(null) }
     var confirmReset by remember { mutableStateOf(false) }
 
@@ -93,13 +94,6 @@ internal fun PreferencesScreen(
                 )
             }
         }
-        OutlinedTextField(
-            value = query,
-            onValueChange = { query = it },
-            label = { Text("Search keys and values") },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
-        )
 
         LazyColumn(
             modifier = Modifier.weight(1f).padding(horizontal = SegmentInset),
