@@ -14,15 +14,20 @@ class SampleApp : Application() {
         super.onCreate()
         Scizor.start(this)
 
-        Scizor.featureFlags.register(
-            FeatureFlag("new_checkout", "New checkout flow", defaultValue = false),
-        )
-        Scizor.featureFlags.register(
-            FeatureFlag("dark_launch", "Dark launch banner", defaultValue = true),
-        )
-        Scizor.featureFlags.register(
-            FeatureFlag("beta_search", "Beta search ranking", defaultValue = false),
-        )
+        listOf(
+            "dark_mode_v2" to true,
+            "new_checkout_flow" to false,
+            "enhanced_search" to true,
+            "push_notifications" to true,
+            "biometric_login" to false,
+            "analytics_v3" to true,
+            "experimental_ui" to false,
+            "offline_mode" to true,
+        ).forEach { (key, value) ->
+            Scizor.featureFlags.register(
+                FeatureFlag(key, key.replace('_', ' ').replaceFirstChar { it.uppercase() }, defaultValue = value),
+            )
+        }
 
         Scizor.servers.configure(
             listOf(
@@ -88,20 +93,9 @@ class SampleApp : Application() {
         Log.i("ScizorSample", "Sample app started")
     }
 
-    /** Creates a small SQLite database so the Database browser has something to show. */
+    /** Seeds the demo SQLite database (users, posts, products) for the Database browser. */
     private fun seedDemoDatabase() {
-        runCatching {
-            openOrCreateDatabase("demo.db", Context.MODE_PRIVATE, null).use { db ->
-                db.execSQL(
-                    "CREATE TABLE IF NOT EXISTS users " +
-                        "(id INTEGER PRIMARY KEY, name TEXT, email TEXT, active INTEGER)",
-                )
-                db.execSQL("DELETE FROM users")
-                db.execSQL("INSERT INTO users (name, email, active) VALUES ('Brandon', 'brandon@example.com', 1)")
-                db.execSQL("INSERT INTO users (name, email, active) VALUES ('Ada', 'ada@example.com', 0)")
-                db.execSQL("INSERT INTO users (name, email, active) VALUES ('Grace', 'grace@example.com', 1)")
-            }
-        }
+        SampleDatabase.seed(this)
     }
 
     /** Writes a spread of SharedPreferences values so the Preferences browser has data. */
