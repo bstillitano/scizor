@@ -37,6 +37,7 @@ class MainActivity : ComponentActivity() {
                         onOpenScizor = { Scizor.show() },
                         onMakeRequest = { makeSampleRequest() },
                         onLogMessages = { logSampleMessages() },
+                        onTriggerCrash = { throw RuntimeException("Sample crash triggered from Scizor") },
                     )
                 }
             }
@@ -67,6 +68,7 @@ private fun SampleContent(
     onOpenScizor: () -> Unit,
     onMakeRequest: () -> Unit,
     onLogMessages: () -> Unit,
+    onTriggerCrash: () -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -98,6 +100,12 @@ private fun SampleContent(
             modifier = Modifier.padding(top = 12.dp),
         ) {
             Text("Log sample messages")
+        }
+        Button(
+            onClick = onTriggerCrash,
+            modifier = Modifier.padding(top = 12.dp),
+        ) {
+            Text("Trigger test crash")
         }
     }
 }

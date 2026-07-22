@@ -49,7 +49,24 @@ class SampleApp : Application() {
         )
 
         seedDemoPreferences()
+        seedDemoDatabase()
         Log.i("ScizorSample", "Sample app started")
+    }
+
+    /** Creates a small SQLite database so the Database browser has something to show. */
+    private fun seedDemoDatabase() {
+        runCatching {
+            openOrCreateDatabase("demo.db", Context.MODE_PRIVATE, null).use { db ->
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS users " +
+                        "(id INTEGER PRIMARY KEY, name TEXT, email TEXT, active INTEGER)",
+                )
+                db.execSQL("DELETE FROM users")
+                db.execSQL("INSERT INTO users (name, email, active) VALUES ('Brandon', 'brandon@example.com', 1)")
+                db.execSQL("INSERT INTO users (name, email, active) VALUES ('Ada', 'ada@example.com', 0)")
+                db.execSQL("INSERT INTO users (name, email, active) VALUES ('Grace', 'grace@example.com', 1)")
+            }
+        }
     }
 
     /** Writes a spread of SharedPreferences values so the Preferences browser has data. */

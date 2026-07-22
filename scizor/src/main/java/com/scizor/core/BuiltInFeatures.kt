@@ -1,15 +1,23 @@
 package com.scizor.core
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.CompareArrows
 import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.Flag
+import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.Link
+import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.Terminal
 import androidx.compose.material.icons.filled.Tune
 import com.scizor.feature.console.ConsoleScreen
+import com.scizor.feature.crashlogs.CrashLogsScreen
 import com.scizor.feature.custom.EnvironmentVariablesScreen
+import com.scizor.feature.databasebrowser.DatabaseBrowserScreen
+import com.scizor.feature.deeplink.DeepLinkTesterScreen
 import com.scizor.feature.featureflags.FeatureFlagsScreen
+import com.scizor.feature.filebrowser.FileBrowserScreen
 import com.scizor.feature.network.NetworkScreen
 import com.scizor.feature.preferences.PreferencesScreen
 import com.scizor.feature.servers.ServersScreen
@@ -73,6 +81,26 @@ internal fun registerBuiltInFeatures() {
             screen = { PreferencesScreen() },
         ),
     )
+    FeatureRegistry.register(
+        ScizorMenuEntry(
+            id = "file_browser",
+            title = "File Browser",
+            subtitle = "Browse the app sandbox",
+            icon = Icons.Filled.Folder,
+            section = "Data",
+            screen = { FileBrowserScreen(it) },
+        ),
+    )
+    FeatureRegistry.register(
+        ScizorMenuEntry(
+            id = "database_browser",
+            title = "Database Browser",
+            subtitle = "Inspect SQLite databases",
+            icon = Icons.Filled.Storage,
+            section = "Data",
+            screen = { DatabaseBrowserScreen(it) },
+        ),
+    )
 
     // System Tools
     FeatureRegistry.register(
@@ -83,6 +111,26 @@ internal fun registerBuiltInFeatures() {
             icon = Icons.Filled.Terminal,
             section = "System Tools",
             screen = { ConsoleScreen() },
+        ),
+    )
+    FeatureRegistry.register(
+        ScizorMenuEntry(
+            id = "deep_link",
+            title = "Deep Link Tester",
+            subtitle = "Fire URLs and schemes",
+            icon = Icons.Filled.Link,
+            section = "System Tools",
+            screen = { DeepLinkTesterScreen() },
+        ),
+    )
+    FeatureRegistry.register(
+        ScizorMenuEntry(
+            id = "crash_logs",
+            title = "Crash Logs",
+            subtitle = "Captured uncaught exceptions",
+            icon = Icons.Filled.BugReport,
+            section = "System Tools",
+            screen = { CrashLogsScreen(it) },
         ),
     )
 }

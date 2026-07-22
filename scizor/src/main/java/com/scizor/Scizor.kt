@@ -8,6 +8,7 @@ import com.scizor.core.ScizorStore
 import com.scizor.core.ShakeDetector
 import com.scizor.core.registerBuiltInFeatures
 import com.scizor.feature.console.ConsoleLogger
+import com.scizor.feature.crashlogs.CrashLogger
 import com.scizor.feature.custom.DeveloperOption
 import com.scizor.feature.featureflags.FeatureFlags
 import com.scizor.feature.network.NetworkLogger
@@ -76,6 +77,7 @@ object Scizor {
         store = ScizorStore(application).also { it.preload() }
         registerBuiltInFeatures()
         ConsoleLogger.start()
+        CrashLogger.install(application)
         applyInvocationGesture(application)
     }
 
