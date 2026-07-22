@@ -96,7 +96,7 @@ internal fun registerBuiltInFeatures() {
             subtitle = "View and edit SharedPreferences",
             icon = Icons.Filled.Tune,
             section = "Data",
-            screen = { PreferencesScreen() },
+            screen = { PreferencesScreen(it) },
         ),
     )
     FeatureRegistry.register(

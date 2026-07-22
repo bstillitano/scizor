@@ -77,9 +77,12 @@ internal fun scizorApiSurface(application: Application) {
     flags.setOverride("k", FlagOverride.OFF)
     flags.setOverride("k", FlagOverride.REMOTE)
     flags.resetAllToRemote()
+    flags.pinnedKeys()
+    flags.isPinned("k")
+    flags.togglePin("k")
 
     // Servers
-    servers.configure(listOf(ServerEnvironment(name = "n", baseUrl = "u")))
+    servers.configure(listOf(ServerEnvironment(name = "n", baseUrl = "u", variables = mapOf("k" to "v"))))
     servers.all()
     val selected: ServerEnvironment? = servers.selected
     selected?.let { servers.select(it) }

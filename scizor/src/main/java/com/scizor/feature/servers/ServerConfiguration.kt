@@ -2,10 +2,11 @@ package com.scizor.feature.servers
 
 import com.scizor.Scizor
 
-/** A named backend environment the app can point at. */
+/** A named backend environment the app can point at, with optional extra variables. */
 data class ServerEnvironment(
     val name: String,
     val baseUrl: String,
+    val variables: Map<String, String> = emptyMap(),
 )
 
 /**

@@ -1,7 +1,11 @@
-@file:OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
+@file:OptIn(
+    androidx.compose.foundation.ExperimentalFoundationApi::class,
+    androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class,
+)
 
 package com.scizor.feature.featureflags
 
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -15,6 +19,7 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -37,6 +42,7 @@ private enum class GlobalRow { ENABLE, RESET }
 @Composable
 internal fun FeatureFlagsScreen(viewModel: FeatureFlagsViewModel = viewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    var query by remember { mutableStateOf("") }
 
     Column(
         modifier = Modifier
@@ -65,9 +71,7 @@ internal fun FeatureFlagsScreen(viewModel: FeatureFlagsViewModel = viewModel()) 
                     onClick = viewModel::resetAll,
                     shapes = shapes,
                     colors = scizorSegmentedColors(),
-                    content = {
-                        Text("Reset all to Remote", color = MaterialTheme.colorScheme.primary)
-                    },
+                    content = { Text("Reset all to Remote", color = MaterialTheme.colorScheme.primary) },
                 )
             }
         }
@@ -82,30 +86,64 @@ internal fun FeatureFlagsScreen(viewModel: FeatureFlagsViewModel = viewModel()) 
             return@Column
         }
 
-        SectionHeader("Flags")
-        if (state.flags.isEmpty()) {
+        OutlinedTextField(
+            value = query,
+            onValueChange = { query = it },
+            label = { Text("Search toggles") },
+            singleLine = true,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 4.dp),
+        )
+
+        val filtered = state.flags.filter { it.title.contains(query, ignoreCase = true) }
+        val pinned = filtered.filter { it.pinned }
+        val rest = filtered.filterNot { it.pinned }
+
+        if (pinned.isNotEmpty()) {
+            SectionHeader("Pinned")
+            FlagList(pinned, viewModel)
+        }
+
+        SectionHeader("Toggles")
+        if (rest.isEmpty()) {
             Text(
-                text = "No feature flags registered.",
+                text = if (state.flags.isEmpty()) "No feature flags registered." else "No matching toggles.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 28.dp, vertical = 12.dp),
             )
-            return@Column
+        } else {
+            FlagList(rest, viewModel)
         }
+    }
+}
 
-        SegmentedColumn(items = state.flags) { flag, shapes ->
+@Composable
+private fun FlagList(flags: List<FlagUi>, viewModel: FeatureFlagsViewModel) {
+    SegmentedColumn(items = flags) { flag, shapes ->
+        var pinMenu by remember { mutableStateOf(false) }
+        Box {
             SegmentedListItem(
+                onLongClick = { pinMenu = true },
+                onClick = {},
                 shapes = shapes,
                 colors = scizorSegmentedColors(),
                 supportingContent = { Text("Remote: ${flag.remoteValue}") },
                 trailingContent = {
-                    FlagStateDropdown(
-                        state = flag.state,
-                        onSelect = { viewModel.setState(flag.key, it) },
-                    )
+                    FlagStateDropdown(state = flag.state) { viewModel.setState(flag.key, it) }
                 },
                 content = { Text(flag.title) },
             )
+            DropdownMenu(expanded = pinMenu, onDismissRequest = { pinMenu = false }) {
+                DropdownMenuItem(
+                    text = { Text(if (flag.pinned) "Unpin" else "Pin to top") },
+                    onClick = {
+                        viewModel.togglePin(flag.key)
+                        pinMenu = false
+                    },
+                )
+            }
         }
     }
 }
@@ -133,7 +171,7 @@ private fun FlagStateDropdown(state: FlagOverride, onSelect: (FlagOverride) -> U
 }
 
 private fun FlagOverride.label(): String = when (this) {
-    FlagOverride.ON -> "On"
-    FlagOverride.OFF -> "Off"
+    FlagOverride.ON -> "True"
+    FlagOverride.OFF -> "False"
     FlagOverride.REMOTE -> "Remote"
 }

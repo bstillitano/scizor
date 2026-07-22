@@ -75,7 +75,19 @@ object FeatureFlags {
         flags.keys.forEach { store.remove(storeKey(it)) }
     }
 
+    fun pinnedKeys(): List<String> =
+        Scizor.storeOrNull()?.string(PINNED)?.split(",")?.filter { it.isNotEmpty() } ?: emptyList()
+
+    fun isPinned(key: String): Boolean = key in pinnedKeys()
+
+    fun togglePin(key: String) {
+        val current = pinnedKeys()
+        val updated = if (key in current) current - key else current + key
+        Scizor.storeOrNull()?.putString(PINNED, updated.joinToString(","))
+    }
+
     private fun storeKey(key: String) = "flag_$key"
 
     private const val OVERRIDES_ENABLED = "flag_overrides_enabled"
+    private const val PINNED = "flag_pinned"
 }

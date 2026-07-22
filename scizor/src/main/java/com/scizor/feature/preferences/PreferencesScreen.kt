@@ -1,8 +1,11 @@
-@file:OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
+@file:OptIn(
+    androidx.compose.foundation.ExperimentalFoundationApi::class,
+    androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class,
+)
 
 package com.scizor.feature.preferences
 
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -11,18 +14,21 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SegmentedListItem
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -33,17 +39,26 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.scizor.ui.ScizorNavigator
+import com.scizor.ui.SectionHeader
 import com.scizor.ui.SegmentedColumn
 import com.scizor.ui.scizorSegmentedColors
 
 @Composable
-internal fun PreferencesScreen(viewModel: PreferencesViewModel = viewModel()) {
+internal fun PreferencesScreen(
+    navigator: ScizorNavigator,
+    viewModel: PreferencesViewModel = viewModel(),
+) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    var query by remember { mutableStateOf("") }
     var editing by remember { mutableStateOf<PrefEntry?>(null) }
+    var confirmReset by remember { mutableStateOf(false) }
 
     if (state.files.isEmpty()) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -56,11 +71,11 @@ internal fun PreferencesScreen(viewModel: PreferencesViewModel = viewModel()) {
         return
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState()),
-    ) {
+    val entries = state.entries.filter {
+        query.isBlank() || it.key.contains(query, true) || it.value.contains(query, true)
+    }
+
+    Column(modifier = Modifier.fillMaxSize()) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -76,87 +91,176 @@ internal fun PreferencesScreen(viewModel: PreferencesViewModel = viewModel()) {
                 )
             }
         }
+        OutlinedTextField(
+            value = query,
+            onValueChange = { query = it },
+            label = { Text("Search keys and values") },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+        )
 
-        if (state.entries.isEmpty()) {
-            Text(
-                "No entries in this file.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = 28.dp, vertical = 12.dp),
-            )
-            return@Column
-        }
-
-        SegmentedColumn(items = state.entries) { entry, shapes ->
-            val isBoolean = entry.type.equals("Boolean", ignoreCase = true)
-            SegmentedListItem(
-                shapes = shapes,
-                colors = scizorSegmentedColors(),
-                supportingContent = { Text("${entry.value}  ·  ${entry.type}") },
-                trailingContent = {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        if (isBoolean) {
-                            Switch(
-                                checked = entry.value.toBoolean(),
-                                onCheckedChange = { viewModel.setBoolean(entry.key, it) },
-                            )
+        LazyColumn(modifier = Modifier.weight(1f)) {
+            if (entries.isEmpty()) {
+                item {
+                    Text(
+                        if (state.entries.isEmpty()) "No entries in this file." else "No matching items.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 28.dp, vertical = 12.dp),
+                    )
+                }
+            }
+            items(entries, key = { it.key }) { entry ->
+                PrefRow(
+                    entry = entry,
+                    onToggleBool = { viewModel.setBoolean(entry.key, it) },
+                    onClickRow = {
+                        when (entry.type) {
+                            "StringSet" -> navigator.push(entry.key) {
+                                StringSetScreen(viewModel.stringSet(entry.key))
+                            }
+                            "Boolean", "null", "Unknown" -> {}
+                            else -> editing = entry
                         }
-                        IconButton(onClick = { viewModel.remove(entry.key) }) {
-                            Icon(Icons.Filled.Delete, contentDescription = "Delete")
-                        }
+                    },
+                    onDelete = { viewModel.remove(entry.key) },
+                )
+                HorizontalDivider()
+            }
+            if (query.isBlank()) {
+                item {
+                    TextButton(
+                        onClick = { confirmReset = true },
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                    ) {
+                        Text("Reset “${state.selectedFile}”", color = MaterialTheme.colorScheme.error)
                     }
-                },
-                modifier = if (isBoolean) Modifier else Modifier.clickable { editing = entry },
-                content = { Text(entry.key) },
-            )
+                }
+            }
         }
     }
 
     editing?.let { entry ->
-        EditStringDialog(
+        EditValueDialog(
             entry = entry,
             onDismiss = { editing = null },
-            onSave = { newValue ->
-                viewModel.setString(entry.key, newValue)
-                editing = null
+            onSave = { text ->
+                val ok = applyEdit(entry, text, viewModel)
+                if (ok) editing = null
+                ok
             },
+        )
+    }
+
+    if (confirmReset) {
+        AlertDialog(
+            onDismissRequest = { confirmReset = false },
+            title = { Text("Reset preferences?") },
+            text = { Text("This permanently deletes every value in “${state.selectedFile}”. This cannot be undone.") },
+            confirmButton = {
+                TextButton(onClick = { viewModel.resetAll(); confirmReset = false }) {
+                    Text("Reset all", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = { TextButton(onClick = { confirmReset = false }) { Text("Cancel") } },
         )
     }
 }
 
+private fun applyEdit(entry: PrefEntry, text: String, viewModel: PreferencesViewModel): Boolean {
+    return when (entry.type) {
+        "Int" -> text.toIntOrNull()?.let { viewModel.setInt(entry.key, it); true } ?: false
+        "Long" -> text.toLongOrNull()?.let { viewModel.setLong(entry.key, it); true } ?: false
+        "Float" -> text.toFloatOrNull()?.let { viewModel.setFloat(entry.key, it); true } ?: false
+        else -> { viewModel.setString(entry.key, text); true }
+    }
+}
+
 @Composable
-private fun EditStringDialog(
+private fun PrefRow(
+    entry: PrefEntry,
+    onToggleBool: (Boolean) -> Unit,
+    onClickRow: () -> Unit,
+    onDelete: () -> Unit,
+) {
+    val clipboard = LocalClipboardManager.current
+    var menu by remember { mutableStateOf(false) }
+    val isBool = entry.type.equals("Boolean", true)
+    Box {
+        ListItem(
+            headlineContent = { Text(entry.key) },
+            supportingContent = { Text("${entry.value}  ·  ${entry.type}") },
+            trailingContent = {
+                if (isBool) {
+                    Switch(checked = entry.value.toBoolean(), onCheckedChange = onToggleBool)
+                }
+            },
+            modifier = Modifier.combinedClickable(
+                onClick = { if (!isBool) onClickRow() },
+                onLongClick = { menu = true },
+            ),
+        )
+        DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
+            DropdownMenuItem(text = { Text("Copy value") }, onClick = {
+                clipboard.setText(AnnotatedString(entry.value)); menu = false
+            })
+            DropdownMenuItem(text = { Text("Copy key & value") }, onClick = {
+                clipboard.setText(AnnotatedString("${entry.key}: ${entry.value}")); menu = false
+            })
+            DropdownMenuItem(text = { Text("Delete") }, onClick = { onDelete(); menu = false })
+        }
+    }
+}
+
+@Composable
+private fun EditValueDialog(
     entry: PrefEntry,
     onDismiss: () -> Unit,
-    onSave: (String) -> Unit,
+    onSave: (String) -> Boolean,
 ) {
+    val numeric = entry.type in setOf("Int", "Long", "Float")
     var text by remember { mutableStateOf(entry.value) }
-    Dialog(onDismissRequest = onDismiss) {
-        Surface(
-            shape = MaterialTheme.shapes.extraLarge,
-            color = MaterialTheme.colorScheme.surfaceContainerHigh,
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(24.dp),
-            ) {
-                Text(entry.key, style = MaterialTheme.typography.titleMedium)
+    var error by remember { mutableStateOf(false) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(entry.key) },
+        text = {
+            Column {
                 OutlinedTextField(
                     value = text,
-                    onValueChange = { text = it },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 16.dp),
+                    onValueChange = { text = it; error = false },
+                    isError = error,
+                    singleLine = !numeric && entry.value.length < 40,
+                    label = { Text("Value (${entry.type})") },
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = if (numeric) KeyboardType.Number else KeyboardType.Text,
+                    ),
                 )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End,
-                ) {
-                    TextButton(onClick = onDismiss) { Text("Cancel") }
-                    Button(onClick = { onSave(text) }) { Text("Save") }
+                if (error) {
+                    Text("Enter a valid ${entry.type}.", color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall)
                 }
             }
+        },
+        confirmButton = {
+            Button(onClick = { if (!onSave(text)) error = true }) { Text("Save") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+    )
+}
+
+@Composable
+private fun StringSetScreen(items: List<String>) {
+    if (items.isEmpty()) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text("Empty set.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        return
+    }
+    Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+        SectionHeader("String Set (${items.size})")
+        SegmentedColumn(items = items) { value, shapes ->
+            SegmentedListItem(shapes = shapes, colors = scizorSegmentedColors(), content = { Text(value) })
         }
     }
 }

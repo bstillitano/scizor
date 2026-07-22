@@ -26,9 +26,18 @@ class SampleApp : Application() {
 
         Scizor.servers.configure(
             listOf(
-                ServerEnvironment("Development", "https://dev.api.example.com"),
-                ServerEnvironment("Staging", "https://staging.api.example.com"),
-                ServerEnvironment("Production", "https://api.example.com"),
+                ServerEnvironment(
+                    "Development", "https://dev.api.example.com",
+                    variables = mapOf("cdnUrl" to "https://cdn.dev.example.com", "wsUrl" to "wss://dev.example.com"),
+                ),
+                ServerEnvironment(
+                    "Staging", "https://staging.api.example.com",
+                    variables = mapOf("cdnUrl" to "https://cdn.staging.example.com"),
+                ),
+                ServerEnvironment(
+                    "Production", "https://api.example.com",
+                    variables = mapOf("cdnUrl" to "https://cdn.example.com", "wsUrl" to "wss://example.com"),
+                ),
             ),
         )
 

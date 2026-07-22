@@ -4,6 +4,7 @@ package com.scizor.feature.servers
 data class ServerEnvironment(
     val name: String,
     val baseUrl: String,
+    val variables: Map<String, String> = emptyMap(),
 )
 
 /**

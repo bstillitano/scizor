@@ -33,30 +33,28 @@ internal class PreferencesViewModel(application: Application) : AndroidViewModel
     }
 
     fun selectFile(file: String) {
-        val context = getApplication<Application>()
         _state.value = _state.value.copy(
             selectedFile = file,
-            entries = PreferencesBrowser.entries(context, file),
+            entries = PreferencesBrowser.entries(getApplication(), file),
         )
     }
 
-    fun setString(key: String, value: String) = mutate { file ->
-        PreferencesBrowser.putString(getApplication(), file, key, value)
+    fun stringSet(key: String): List<String> {
+        val file = _state.value.selectedFile ?: return emptyList()
+        return PreferencesBrowser.stringSet(getApplication(), file, key)
     }
 
-    fun setBoolean(key: String, value: Boolean) = mutate { file ->
-        PreferencesBrowser.putBoolean(getApplication(), file, key, value)
-    }
-
-    fun remove(key: String) = mutate { file ->
-        PreferencesBrowser.remove(getApplication(), file, key)
-    }
+    fun setString(key: String, value: String) = mutate { PreferencesBrowser.putString(getApplication(), it, key, value) }
+    fun setBoolean(key: String, value: Boolean) = mutate { PreferencesBrowser.putBoolean(getApplication(), it, key, value) }
+    fun setInt(key: String, value: Int) = mutate { PreferencesBrowser.putInt(getApplication(), it, key, value) }
+    fun setLong(key: String, value: Long) = mutate { PreferencesBrowser.putLong(getApplication(), it, key, value) }
+    fun setFloat(key: String, value: Float) = mutate { PreferencesBrowser.putFloat(getApplication(), it, key, value) }
+    fun remove(key: String) = mutate { PreferencesBrowser.remove(getApplication(), it, key) }
+    fun resetAll() = mutate { PreferencesBrowser.resetAll(getApplication(), it) }
 
     private inline fun mutate(block: (String) -> Unit) {
         val file = _state.value.selectedFile ?: return
         block(file)
-        _state.value = _state.value.copy(
-            entries = PreferencesBrowser.entries(getApplication(), file),
-        )
+        _state.value = _state.value.copy(entries = PreferencesBrowser.entries(getApplication(), file))
     }
 }

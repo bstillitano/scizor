@@ -10,6 +10,7 @@ internal data class FlagUi(
     val title: String,
     val remoteValue: Boolean,
     val state: FlagOverride,
+    val pinned: Boolean,
 )
 
 internal data class FeatureFlagsUiState(
@@ -29,14 +30,17 @@ internal class FeatureFlagsViewModel : ViewModel() {
     fun refresh() {
         _state.value = FeatureFlagsUiState(
             overridesEnabled = FeatureFlags.overridesEnabled,
-            flags = FeatureFlags.all().map { flag ->
-                FlagUi(
-                    key = flag.key,
-                    title = flag.title,
-                    remoteValue = flag.defaultValue,
-                    state = FeatureFlags.overrideState(flag.key),
-                )
-            },
+            flags = FeatureFlags.all()
+                .sortedBy { it.title.lowercase() }
+                .map { flag ->
+                    FlagUi(
+                        key = flag.key,
+                        title = flag.title,
+                        remoteValue = flag.defaultValue,
+                        state = FeatureFlags.overrideState(flag.key),
+                        pinned = FeatureFlags.isPinned(flag.key),
+                    )
+                },
         )
     }
 
@@ -47,6 +51,11 @@ internal class FeatureFlagsViewModel : ViewModel() {
 
     fun setState(key: String, state: FlagOverride) {
         FeatureFlags.setOverride(key, state)
+        refresh()
+    }
+
+    fun togglePin(key: String) {
+        FeatureFlags.togglePin(key)
         refresh()
     }
 

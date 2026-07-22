@@ -38,4 +38,11 @@ object FeatureFlags {
     fun isOverridden(key: String): Boolean = false
 
     fun resetAllToRemote() = Unit
+
+    fun pinnedKeys(): List<String> = emptyList()
+
+    fun isPinned(key: String): Boolean = false
+
+    @Suppress("UNUSED_PARAMETER")
+    fun togglePin(key: String) = Unit
 }
