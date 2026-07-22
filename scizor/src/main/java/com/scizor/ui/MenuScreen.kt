@@ -41,6 +41,8 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.scizor.core.MenuPins
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.ImageBitmap
@@ -132,28 +134,39 @@ private fun InfoSegment(row: MenuRow.Info, shapes: androidx.compose.material3.Li
         leadingContent = row.icon?.let { icon ->
             { Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) }
         },
-        trailingContent = {
-            if (row.value == LOADING_PLACEHOLDER) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(16.dp),
-                    strokeWidth = 2.dp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            } else {
-                Text(
-                    text = row.value,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        },
         modifier = Modifier.combinedClickable(
             onClick = {},
             onLongClick = {
                 clipboard.setText(AnnotatedString("${row.label}: ${row.value}"))
             },
         ),
-        content = { Text(row.label) },
+        // Label and value share the row directly so the label (measured at its
+        // intrinsic width) always keeps its line and the value yields, ellipsizing
+        // on the right — rather than the value squeezing the label into a wrap.
+        content = {
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Text(row.label, maxLines = 1)
+                Spacer(Modifier.width(16.dp))
+                Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.CenterEnd) {
+                    if (row.value == LOADING_PLACEHOLDER) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    } else {
+                        Text(
+                            text = row.value,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            textAlign = TextAlign.End,
+                        )
+                    }
+                }
+            }
+        },
     )
 }
 
