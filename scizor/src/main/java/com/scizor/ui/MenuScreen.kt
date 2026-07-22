@@ -1,9 +1,12 @@
+@file:OptIn(
+    androidx.compose.foundation.ExperimentalFoundationApi::class,
+    androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class,
+)
+
 package com.scizor.ui
 
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -18,21 +21,18 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.Icon
-import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
+import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -42,10 +42,6 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
 import androidx.lifecycle.viewmodel.compose.viewModel
-
-// Segment corner radii for the M3 grouped/segmented list.
-private val SegmentEnd = 20.dp
-private val SegmentJoin = 4.dp
 
 @Composable
 internal fun MenuScreen(
@@ -92,41 +88,87 @@ private fun Subheader(title: String) {
     )
 }
 
-/** A section rendered as a Material grouped list: tonal segments, rounded ends, small gaps. */
+/** A section rendered with Material 3's expressive [SegmentedListItem] group. */
 @Composable
 private fun SegmentedGroup(rows: List<MenuRow>, navigator: ScizorNavigator) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(2.dp),
+        verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap),
     ) {
         rows.forEachIndexed { index, row ->
-            Surface(
-                color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                shape = segmentShape(index, rows.size),
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                when (row) {
-                    is MenuRow.Info -> InfoListItem(row)
-                    is MenuRow.Action -> ActionListItem(row, navigator)
-                }
+            val shapes = ListItemDefaults.segmentedShapes(index = index, count = rows.size)
+            when (row) {
+                is MenuRow.Info -> InfoSegment(row, shapes)
+                is MenuRow.Action -> ActionSegment(row, shapes, navigator)
             }
         }
     }
 }
 
-private fun segmentShape(index: Int, count: Int): RoundedCornerShape = when {
-    count == 1 -> RoundedCornerShape(SegmentEnd)
-    index == 0 -> RoundedCornerShape(
-        topStart = SegmentEnd, topEnd = SegmentEnd,
-        bottomStart = SegmentJoin, bottomEnd = SegmentJoin,
+@Composable
+private fun InfoSegment(row: MenuRow.Info, shapes: androidx.compose.material3.ListItemShapes) {
+    val clipboard = LocalClipboardManager.current
+    SegmentedListItem(
+        shapes = shapes,
+        colors = ListItemDefaults.segmentedColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+        ),
+        trailingContent = {
+            Text(
+                text = row.value,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        },
+        modifier = Modifier.combinedClickable(
+            onClick = {},
+            onLongClick = {
+                clipboard.setText(AnnotatedString("${row.label}: ${row.value}"))
+            },
+        ),
+        content = { Text(row.label) },
     )
-    index == count - 1 -> RoundedCornerShape(
-        topStart = SegmentJoin, topEnd = SegmentJoin,
-        bottomStart = SegmentEnd, bottomEnd = SegmentEnd,
+}
+
+@Composable
+private fun ActionSegment(
+    row: MenuRow.Action,
+    shapes: androidx.compose.material3.ListItemShapes,
+    navigator: ScizorNavigator,
+) {
+    SegmentedListItem(
+        onClick = {
+            when (val action = row.action) {
+                is MenuAction.Open -> navigator.push(action.title, action.screen)
+                is MenuAction.Run -> action.block()
+            }
+        },
+        shapes = shapes,
+        colors = ListItemDefaults.segmentedColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+        ),
+        leadingContent = { LeadingIcon(row.icon) },
+        supportingContent = row.subtitle?.let { { Text(it) } },
+        trailingContent = {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        },
+        content = { Text(row.title) },
     )
-    else -> RoundedCornerShape(SegmentJoin)
+}
+
+@Composable
+private fun LeadingIcon(icon: ImageVector) {
+    Icon(
+        imageVector = icon,
+        contentDescription = null,
+        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
 }
 
 @Composable
@@ -173,59 +215,4 @@ private fun AppHeader() {
             )
         }
     }
-}
-
-@OptIn(ExperimentalFoundationApi::class)
-@Composable
-private fun InfoListItem(row: MenuRow.Info) {
-    val clipboard = LocalClipboardManager.current
-    ListItem(
-        headlineContent = { Text(row.label) },
-        trailingContent = {
-            Text(
-                text = row.value,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        },
-        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-        modifier = Modifier.combinedClickable(
-            onClick = {},
-            onLongClick = {
-                clipboard.setText(AnnotatedString("${row.label}: ${row.value}"))
-            },
-        ),
-    )
-}
-
-@Composable
-private fun ActionListItem(row: MenuRow.Action, navigator: ScizorNavigator) {
-    ListItem(
-        leadingContent = { LeadingIcon(row.icon) },
-        headlineContent = { Text(row.title) },
-        supportingContent = row.subtitle?.let { { Text(it) } },
-        trailingContent = {
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        },
-        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-        modifier = Modifier.clickable {
-            when (val action = row.action) {
-                is MenuAction.Open -> navigator.push(action.title, action.screen)
-                is MenuAction.Run -> action.block()
-            }
-        },
-    )
-}
-
-@Composable
-private fun LeadingIcon(icon: ImageVector) {
-    Icon(
-        imageVector = icon,
-        contentDescription = null,
-        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-    )
 }
