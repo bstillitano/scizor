@@ -7,7 +7,12 @@ import com.scizor.core.ScizorActivity
 import com.scizor.core.ScizorStore
 import com.scizor.core.ShakeDetector
 import com.scizor.core.registerBuiltInFeatures
+import com.scizor.feature.console.ConsoleLogger
 import com.scizor.feature.custom.DeveloperOption
+import com.scizor.feature.featureflags.FeatureFlags
+import com.scizor.feature.network.NetworkLogger
+import com.scizor.feature.preferences.PreferencesBrowser
+import com.scizor.feature.servers.ServerConfiguration
 
 /**
  * Entry point to the Scizor debugging toolkit — the Android counterpart to the
@@ -46,6 +51,21 @@ object Scizor {
     /** Read-only key/value pairs surfaced in the menu's environment screen. */
     var environmentVariables: Map<String, String> = emptyMap()
 
+    /** HTTP traffic logger. Add [NetworkLogger.interceptor] to your OkHttpClient. */
+    val network: NetworkLogger get() = NetworkLogger
+
+    /** Runtime-overridable feature flags. */
+    val featureFlags: FeatureFlags get() = FeatureFlags
+
+    /** Backend environment switching. */
+    val servers: ServerConfiguration get() = ServerConfiguration
+
+    /** Live Logcat capture. */
+    val console: ConsoleLogger get() = ConsoleLogger
+
+    /** SharedPreferences inspection. */
+    val preferences: PreferencesBrowser get() = PreferencesBrowser
+
     /**
      * Wires up Scizor. Call once, early in [Application.onCreate].
      * Safe to call more than once; subsequent calls are ignored.
@@ -55,6 +75,7 @@ object Scizor {
         this.application = application
         store = ScizorStore(application).also { it.preload() }
         registerBuiltInFeatures()
+        ConsoleLogger.start()
         applyInvocationGesture(application)
     }
 

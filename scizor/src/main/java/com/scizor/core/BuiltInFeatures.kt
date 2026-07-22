@@ -1,12 +1,16 @@
 package com.scizor.core
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CompareArrows
 import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.PhoneAndroid
+import androidx.compose.material.icons.filled.Terminal
 import androidx.compose.material.icons.filled.Tune
+import com.scizor.feature.console.ConsoleScreen
 import com.scizor.feature.deviceinfo.DeviceInfoScreen
 import com.scizor.feature.featureflags.FeatureFlagsScreen
+import com.scizor.feature.network.NetworkScreen
 import com.scizor.feature.preferences.PreferencesScreen
 import com.scizor.feature.servers.ServersScreen
 
@@ -53,6 +57,26 @@ internal fun registerBuiltInFeatures() {
             icon = Icons.Filled.Tune,
             section = "Data",
             screen = { PreferencesScreen() },
+        ),
+    )
+    FeatureRegistry.register(
+        ScizorMenuEntry(
+            id = "network",
+            title = "Network Logger",
+            subtitle = "Inspect HTTP traffic, export cURL",
+            icon = Icons.Filled.CompareArrows,
+            section = "Networking",
+            screen = { NetworkScreen() },
+        ),
+    )
+    FeatureRegistry.register(
+        ScizorMenuEntry(
+            id = "console",
+            title = "Console Logger",
+            subtitle = "Live Logcat output",
+            icon = Icons.Filled.Terminal,
+            section = "Diagnostics",
+            screen = { ConsoleScreen() },
         ),
     )
 }

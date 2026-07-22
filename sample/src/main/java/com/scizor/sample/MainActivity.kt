@@ -16,22 +16,49 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.scizor.Scizor
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import kotlin.concurrent.thread
 
 class MainActivity : ComponentActivity() {
+
+    private val client: OkHttpClient by lazy {
+        OkHttpClient.Builder()
+            .addInterceptor(Scizor.network.interceptor())
+            .build()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             MaterialTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
-                    SampleContent(onOpenScizor = { Scizor.show() })
+                    SampleContent(
+                        onOpenScizor = { Scizor.show() },
+                        onMakeRequest = { makeSampleRequest() },
+                    )
                 }
+            }
+        }
+    }
+
+    private fun makeSampleRequest() {
+        thread {
+            runCatching {
+                val request = Request.Builder()
+                    .url("https://httpbin.org/get")
+                    .build()
+                client.newCall(request).execute().use { it.body?.string() }
             }
         }
     }
 }
 
 @Composable
-private fun SampleContent(onOpenScizor: () -> Unit) {
+private fun SampleContent(
+    onOpenScizor: () -> Unit,
+    onMakeRequest: () -> Unit,
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -50,6 +77,12 @@ private fun SampleContent(onOpenScizor: () -> Unit) {
         )
         Button(onClick = onOpenScizor) {
             Text("Open Scizor")
+        }
+        Button(
+            onClick = onMakeRequest,
+            modifier = Modifier.padding(top = 12.dp),
+        ) {
+            Text("Make sample HTTP request")
         }
     }
 }
