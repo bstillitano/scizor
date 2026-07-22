@@ -122,6 +122,16 @@ internal object DatabaseBrowser {
         }
     }
 
+    fun insertRow(context: Context, dbName: String, table: String, values: Map<String, String>): Boolean =
+        readWrite(context, dbName)?.use {
+            runCatching {
+                val cv = ContentValues().apply {
+                    values.forEach { (k, v) -> if (v.isNotEmpty()) put(k, v) }
+                }
+                it.insert("\"$table\"", null, cv) >= 0
+            }.getOrDefault(false)
+        } ?: false
+
     fun deleteRow(context: Context, dbName: String, table: String, pkColumn: String, pkValue: String): Boolean =
         readWrite(context, dbName)?.use {
             runCatching { it.delete("\"$table\"", "\"$pkColumn\" = ?", arrayOf(pkValue)) > 0 }.getOrDefault(false)

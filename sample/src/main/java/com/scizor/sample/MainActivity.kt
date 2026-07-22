@@ -1,5 +1,6 @@
 package com.scizor.sample
 
+import android.content.Context
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -21,6 +22,10 @@ import okhttp3.Request
 import kotlin.concurrent.thread
 
 class MainActivity : ComponentActivity() {
+
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(Scizor.wrapAppearance(newBase))
+    }
 
     private val client: OkHttpClient by lazy {
         OkHttpClient.Builder()

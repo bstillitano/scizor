@@ -51,6 +51,11 @@ dependencies {
     implementation(libs.compose.material.icons)
     debugImplementation(libs.compose.ui.tooling)
 
+    // Optional: the Deep Link Tester's QR scanner uses the Google Code Scanner when
+    // present. compileOnly keeps it off Scizor's dependency footprint — consumers who
+    // want QR scanning add `debugImplementation(libs.play.services.code.scanner)`.
+    compileOnly(libs.play.services.code.scanner)
+
     testImplementation(libs.junit)
     testImplementation(libs.robolectric)
     testImplementation(libs.coroutines.test)

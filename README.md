@@ -184,6 +184,44 @@ Scizor.environmentVariables = mapOf(
 )
 ```
 
+### Interface Previews
+
+Register Composables to inspect them live in the menu. Each may carry an optional description:
+
+```kotlin
+Scizor.interfacePreviews = listOf(
+    InterfacePreview("Primary button", "The app's main call-to-action") {
+        Button(onClick = {}) { Text("Click me") }
+    },
+)
+```
+
+### Deep Link Presets
+
+One-tap deep links shown in the Deep Link Tester:
+
+```kotlin
+Scizor.deepLinkPresets = listOf(
+    DeepLinkPreset("Home", "myapp://home"),
+    DeepLinkPreset("Profile", "myapp://user/42"),
+)
+```
+
+The tester's QR scanner appears automatically when the optional
+`com.google.android.gms:play-services-code-scanner` dependency is on the classpath
+(add it via `debugImplementation`).
+
+### Appearance Font Scale
+
+The Appearance screen can force an app-wide font scale. To let it take effect, wrap
+your activities' base context:
+
+```kotlin
+override fun attachBaseContext(base: Context) {
+    super.attachBaseContext(Scizor.wrapAppearance(base))
+}
+```
+
 ## Menu Invocation
 
 By default, shaking the device opens the menu. Configure it:
@@ -214,6 +252,9 @@ still resolve to their registered defaults, so any host logic that reads them ke
 | `Scizor.console` | Logcat capture |
 | `Scizor.developerOptions` | Custom menu entries |
 | `Scizor.environmentVariables` | Read-only key/value display |
+| `Scizor.interfacePreviews` | Host Composables to preview (name + optional description) |
+| `Scizor.deepLinkPresets` | One-tap deep links for the tester |
+| `Scizor.wrapAppearance(base)` | Apply the appearance font-scale override in `attachBaseContext` |
 
 ## License
 

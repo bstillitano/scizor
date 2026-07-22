@@ -19,12 +19,14 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Cancel
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Text
@@ -71,11 +73,20 @@ internal fun DeepLinkTesterScreen() {
             singleLine = true,
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
         )
-        Button(
-            onClick = { fire(url) },
-            enabled = url.isNotBlank(),
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
-        ) { Text("Open URL") }
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Button(onClick = { fire(url) }, enabled = url.isNotBlank()) { Text("Open URL") }
+            if (QrScanner.available) {
+                OutlinedButton(onClick = {
+                    QrScanner.scan(context) { scanned -> scanned?.let { url = it } }
+                }) {
+                    Icon(Icons.Filled.QrCodeScanner, null)
+                    Text("Scan QR", modifier = Modifier.padding(start = 8.dp))
+                }
+            }
+        }
 
         status?.let { (ok, message) ->
             Row(

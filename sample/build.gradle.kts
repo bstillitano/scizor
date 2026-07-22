@@ -44,6 +44,9 @@ dependencies {
     debugImplementation(project(":scizor"))
     releaseImplementation(project(":scizor-no-op"))
 
+    // Enables the Deep Link Tester's QR scanner in debug builds (optional in Scizor).
+    debugImplementation(libs.play.services.code.scanner)
+
     implementation(libs.core.ktx)
     implementation(libs.activity.compose)
     implementation(libs.okhttp)
