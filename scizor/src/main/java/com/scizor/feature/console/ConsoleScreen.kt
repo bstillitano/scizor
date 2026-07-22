@@ -24,6 +24,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -92,6 +95,20 @@ internal fun ConsoleScreen(viewModel: ConsoleViewModel = viewModel()) {
             }
         }
 
+        if (entries.isEmpty()) {
+            androidx.compose.foundation.layout.Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = androidx.compose.ui.Alignment.Center,
+            ) {
+                Text(
+                    "No logs yet.\nConsole output will appear here.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            return@Column
+        }
+
         LazyColumn(
             state = listState,
             modifier = Modifier
@@ -108,25 +125,36 @@ internal fun ConsoleScreen(viewModel: ConsoleViewModel = viewModel()) {
 @Composable
 private fun LogRow(entry: LogEntry) {
     val clipboard = LocalClipboardManager.current
-    Text(
-        text = "${entry.time}  ${entry.level.letter}  ${entry.tag}: ${entry.message}",
-        color = colorFor(entry.level),
-        fontSize = 12.sp,
-        maxLines = 4,
-        overflow = TextOverflow.Ellipsis,
-        style = MaterialTheme.typography.bodySmall,
-        modifier = Modifier
-            .fillMaxWidth()
-            .combinedClickable(
-                onClick = {},
-                onLongClick = {
-                    clipboard.setText(
-                        AnnotatedString("${entry.time} ${entry.level.letter} ${entry.tag}: ${entry.message}"),
-                    )
-                },
+    var expanded by remember { mutableStateOf(false) }
+    var menu by remember { mutableStateOf(false) }
+    val line = "${entry.time}  ${entry.level.letter}  ${entry.tag}: ${entry.message}"
+    androidx.compose.foundation.layout.Box {
+        Text(
+            text = line,
+            color = colorFor(entry.level),
+            fontSize = 12.sp,
+            maxLines = if (expanded) Int.MAX_VALUE else 4,
+            overflow = TextOverflow.Ellipsis,
+            style = MaterialTheme.typography.bodySmall,
+            modifier = Modifier
+                .fillMaxWidth()
+                .combinedClickable(
+                    onClick = { expanded = !expanded },
+                    onLongClick = { menu = true },
+                )
+                .padding(vertical = 2.dp),
+        )
+        androidx.compose.material3.DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
+            androidx.compose.material3.DropdownMenuItem(
+                text = { Text("Copy") },
+                onClick = { clipboard.setText(AnnotatedString(entry.message)); menu = false },
             )
-            .padding(vertical = 2.dp),
-    )
+            androidx.compose.material3.DropdownMenuItem(
+                text = { Text("Copy with timestamp") },
+                onClick = { clipboard.setText(AnnotatedString(line)); menu = false },
+            )
+        }
+    }
 }
 
 private fun colorFor(level: LogLevel): Color = when (level) {
