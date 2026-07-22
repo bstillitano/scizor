@@ -3,39 +3,63 @@ package com.scizor.feature.deviceinfo
 import android.content.Context
 import android.content.pm.ApplicationInfo
 import android.os.Build
+import android.os.Process
+import android.provider.Settings
+import java.text.DateFormat
+import java.util.Date
 
-/** A single labelled fact shown on the device-info screen. */
+/** A single labelled fact shown in the Device or Application section. */
 data class InfoRow(val label: String, val value: String)
 
 /**
- * Collects read-only device and application facts. Pure data gathering — no UI —
- * so it can be unit tested directly.
+ * Collects read-only device and application facts, mirroring the fields Scyther
+ * surfaces on iOS (adapted to Android). Pure data gathering — no UI — so it can
+ * be unit tested directly.
  */
 object DeviceInfo {
+
+    /** Labels that belong to the "Device" section; everything else is "Application". */
+    val deviceLabels = setOf(
+        "OS Version", "API Level", "Manufacturer", "Model", "Hardware", "Device ID",
+    )
 
     fun collect(context: Context): List<InfoRow> {
         val rows = mutableListOf<InfoRow>()
 
+        // Device
+        rows += InfoRow("OS Version", "Android ${Build.VERSION.RELEASE}")
+        rows += InfoRow("API Level", Build.VERSION.SDK_INT.toString())
         rows += InfoRow("Manufacturer", Build.MANUFACTURER)
         rows += InfoRow("Model", Build.MODEL)
-        rows += InfoRow("Device", Build.DEVICE)
-        rows += InfoRow("Android Version", Build.VERSION.RELEASE)
-        rows += InfoRow("API Level", Build.VERSION.SDK_INT.toString())
+        rows += InfoRow("Hardware", Build.HARDWARE)
+        runCatching {
+            val id = Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID)
+            if (!id.isNullOrEmpty()) rows += InfoRow("Device ID", id)
+        }
 
+        // Application
         val pm = context.packageManager
         val packageName = context.packageName
+        runCatching {
+            rows += InfoRow("Name", pm.getApplicationLabel(context.applicationInfo).toString())
+        }
         rows += InfoRow("Package", packageName)
 
         runCatching {
             val info = pm.getPackageInfo(packageName, 0)
-            rows += InfoRow("App Version", info.versionName ?: "—")
-            rows += InfoRow("Build Number", versionCode(info).toString())
+            rows += InfoRow("Version", info.versionName ?: "—")
+            rows += InfoRow("Build", versionCode(info).toString())
+            rows += InfoRow(
+                "Installed",
+                DateFormat.getDateTimeInstance().format(Date(info.lastUpdateTime)),
+            )
         }
 
+        rows += InfoRow("Process ID", Process.myPid().toString())
+
         runCatching {
-            val appInfo = context.applicationInfo
-            val debuggable = (appInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
-            rows += InfoRow("Debuggable", debuggable.toString())
+            val debuggable = (context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
+            rows += InfoRow("Type", if (debuggable) "Debug" else "Release")
         }
 
         return rows

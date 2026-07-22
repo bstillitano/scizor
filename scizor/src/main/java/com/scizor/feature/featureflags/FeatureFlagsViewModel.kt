@@ -8,37 +8,50 @@ import kotlinx.coroutines.flow.asStateFlow
 internal data class FlagUi(
     val key: String,
     val title: String,
-    val enabled: Boolean,
-    val overridden: Boolean,
+    val remoteValue: Boolean,
+    val state: FlagOverride,
+)
+
+internal data class FeatureFlagsUiState(
+    val overridesEnabled: Boolean = true,
+    val flags: List<FlagUi> = emptyList(),
 )
 
 internal class FeatureFlagsViewModel : ViewModel() {
 
-    private val _flags = MutableStateFlow<List<FlagUi>>(emptyList())
-    val flags: StateFlow<List<FlagUi>> = _flags.asStateFlow()
+    private val _state = MutableStateFlow(FeatureFlagsUiState())
+    val state: StateFlow<FeatureFlagsUiState> = _state.asStateFlow()
 
     init {
         refresh()
     }
 
     fun refresh() {
-        _flags.value = FeatureFlags.all().map { flag ->
-            FlagUi(
-                key = flag.key,
-                title = flag.title,
-                enabled = FeatureFlags.isEnabled(flag.key),
-                overridden = FeatureFlags.isOverridden(flag.key),
-            )
-        }
+        _state.value = FeatureFlagsUiState(
+            overridesEnabled = FeatureFlags.overridesEnabled,
+            flags = FeatureFlags.all().map { flag ->
+                FlagUi(
+                    key = flag.key,
+                    title = flag.title,
+                    remoteValue = flag.defaultValue,
+                    state = FeatureFlags.overrideState(flag.key),
+                )
+            },
+        )
     }
 
-    fun toggle(key: String, enabled: Boolean) {
-        FeatureFlags.override(key, enabled)
+    fun setOverridesEnabled(enabled: Boolean) {
+        FeatureFlags.overridesEnabled = enabled
         refresh()
     }
 
-    fun reset(key: String) {
-        FeatureFlags.override(key, null)
+    fun setState(key: String, state: FlagOverride) {
+        FeatureFlags.setOverride(key, state)
+        refresh()
+    }
+
+    fun resetAll() {
+        FeatureFlags.resetAllToRemote()
         refresh()
     }
 }

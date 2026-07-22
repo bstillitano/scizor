@@ -11,6 +11,7 @@ import com.scizor.feature.deviceinfo.DeviceInfo
 import com.scizor.feature.deviceinfo.InfoRow
 import com.scizor.feature.featureflags.FeatureFlag
 import com.scizor.feature.featureflags.FeatureFlags
+import com.scizor.feature.featureflags.FlagOverride
 import com.scizor.feature.network.NetworkLogger
 import com.scizor.feature.network.NetworkTransaction
 import com.scizor.feature.network.ScizorInterceptor
@@ -61,7 +62,13 @@ internal fun scizorApiSurface(application: Application) {
     flags.all()
     flags.isEnabled("k")
     flags.isOverridden("k")
-    flags.override("k", true)
+    flags.remoteValue("k")
+    flags.overridesEnabled = true
+    flags.overrideState("k")
+    flags.setOverride("k", FlagOverride.ON)
+    flags.setOverride("k", FlagOverride.OFF)
+    flags.setOverride("k", FlagOverride.REMOTE)
+    flags.resetAllToRemote()
 
     // Servers
     servers.configure(listOf(ServerEnvironment(name = "n", baseUrl = "u")))

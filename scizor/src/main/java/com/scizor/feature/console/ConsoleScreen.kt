@@ -1,5 +1,9 @@
+@file:OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+
 package com.scizor.feature.console
 
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -7,9 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
@@ -25,6 +27,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -35,10 +39,11 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 internal fun ConsoleScreen(viewModel: ConsoleViewModel = viewModel()) {
     val entries by viewModel.entries.collectAsStateWithLifecycle()
     val filter by viewModel.filter.collectAsStateWithLifecycle()
+    val autoScroll by viewModel.autoScroll.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
 
-    LaunchedEffect(entries.size) {
-        if (entries.isNotEmpty()) listState.animateScrollToItem(entries.lastIndex)
+    LaunchedEffect(entries.size, autoScroll) {
+        if (autoScroll && entries.isNotEmpty()) listState.animateScrollToItem(entries.lastIndex)
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
@@ -62,6 +67,11 @@ internal fun ConsoleScreen(viewModel: ConsoleViewModel = viewModel()) {
                     label = { Text(level.name.take(1)) },
                 )
             }
+            FilterChip(
+                selected = autoScroll,
+                onClick = { viewModel.setAutoScroll(!autoScroll) },
+                label = { Text("Auto-scroll") },
+            )
         }
 
         Row(
@@ -97,6 +107,7 @@ internal fun ConsoleScreen(viewModel: ConsoleViewModel = viewModel()) {
 
 @Composable
 private fun LogRow(entry: LogEntry) {
+    val clipboard = LocalClipboardManager.current
     Text(
         text = "${entry.time}  ${entry.level.letter}  ${entry.tag}: ${entry.message}",
         color = colorFor(entry.level),
@@ -106,6 +117,14 @@ private fun LogRow(entry: LogEntry) {
         style = MaterialTheme.typography.bodySmall,
         modifier = Modifier
             .fillMaxWidth()
+            .combinedClickable(
+                onClick = {},
+                onLongClick = {
+                    clipboard.setText(
+                        AnnotatedString("${entry.time} ${entry.level.letter} ${entry.tag}: ${entry.message}"),
+                    )
+                },
+            )
             .padding(vertical = 2.dp),
     )
 }

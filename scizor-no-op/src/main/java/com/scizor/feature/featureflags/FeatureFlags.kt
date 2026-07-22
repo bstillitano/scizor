@@ -7,10 +7,12 @@ data class FeatureFlag(
     val defaultValue: Boolean,
 )
 
+/** No-op mirror of the real [FlagOverride]. */
+enum class FlagOverride { ON, OFF, REMOTE }
+
 /**
  * No-op mirror of the real [FeatureFlags]. Overrides are impossible in release,
- * so [isEnabled] returns each flag's registered default — the app behaves as if
- * no debug overrides exist.
+ * so flags always resolve to their registered remote/default value.
  */
 object FeatureFlags {
 
@@ -22,10 +24,18 @@ object FeatureFlags {
 
     fun all(): List<FeatureFlag> = flags.values.toList()
 
+    fun remoteValue(key: String): Boolean = flags[key]?.defaultValue ?: false
+
+    var overridesEnabled: Boolean = true
+
     fun isEnabled(key: String): Boolean = flags[key]?.defaultValue ?: false
+
+    fun overrideState(key: String): FlagOverride = FlagOverride.REMOTE
+
+    @Suppress("UNUSED_PARAMETER")
+    fun setOverride(key: String, state: FlagOverride) = Unit
 
     fun isOverridden(key: String): Boolean = false
 
-    @Suppress("UNUSED_PARAMETER")
-    fun override(key: String, value: Boolean?) = Unit
+    fun resetAllToRemote() = Unit
 }

@@ -36,6 +36,7 @@ class MainActivity : ComponentActivity() {
                     SampleContent(
                         onOpenScizor = { Scizor.show() },
                         onMakeRequest = { makeSampleRequest() },
+                        onLogMessages = { logSampleMessages() },
                     )
                 }
             }
@@ -52,12 +53,20 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
+    private fun logSampleMessages() {
+        android.util.Log.d("ScizorSample", "Debug: computed cart total")
+        android.util.Log.i("ScizorSample", "Info: user tapped log button")
+        android.util.Log.w("ScizorSample", "Warning: cache nearly full")
+        android.util.Log.e("ScizorSample", "Error: sample failure for demo")
+    }
 }
 
 @Composable
 private fun SampleContent(
     onOpenScizor: () -> Unit,
     onMakeRequest: () -> Unit,
+    onLogMessages: () -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -83,6 +92,12 @@ private fun SampleContent(
             modifier = Modifier.padding(top = 12.dp),
         ) {
             Text("Make sample HTTP request")
+        }
+        Button(
+            onClick = onLogMessages,
+            modifier = Modifier.padding(top = 12.dp),
+        ) {
+            Text("Log sample messages")
         }
     }
 }

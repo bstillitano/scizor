@@ -20,8 +20,9 @@ class DeviceInfoTest {
         val labels = rows.map { it.label }
         assertTrue(labels.contains("Model"))
         assertTrue(labels.contains("API Level"))
-        assertTrue(labels.contains("App Version"))
+        assertTrue(labels.contains("Version"))
         assertTrue(labels.contains("Package"))
+        assertTrue(labels.contains("Type"))
     }
 
     @Test

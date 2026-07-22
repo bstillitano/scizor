@@ -18,6 +18,13 @@ internal class ConsoleViewModel : ViewModel() {
     private val _filter = MutableStateFlow(ConsoleFilter())
     val filter: StateFlow<ConsoleFilter> = _filter
 
+    private val _autoScroll = MutableStateFlow(true)
+    val autoScroll: StateFlow<Boolean> = _autoScroll
+
+    fun setAutoScroll(enabled: Boolean) {
+        _autoScroll.value = enabled
+    }
+
     val entries: StateFlow<List<LogEntry>> =
         combine(ConsoleLogger.entries, _filter) { entries, filter ->
             entries.filter { entry ->

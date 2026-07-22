@@ -1,3 +1,5 @@
+@file:OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
+
 package com.scizor.feature.preferences
 
 import androidx.compose.foundation.clickable
@@ -9,19 +11,18 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SegmentedListItem
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -36,6 +37,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.scizor.ui.SegmentedColumn
+import com.scizor.ui.scizorSegmentedColors
 
 @Composable
 internal fun PreferencesScreen(viewModel: PreferencesViewModel = viewModel()) {
@@ -43,11 +46,21 @@ internal fun PreferencesScreen(viewModel: PreferencesViewModel = viewModel()) {
     var editing by remember { mutableStateOf<PrefEntry?>(null) }
 
     if (state.files.isEmpty()) {
-        EmptyMessage("No SharedPreferences files found.")
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text(
+                "No SharedPreferences files found.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
         return
     }
 
-    Column(modifier = Modifier.fillMaxSize()) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState()),
+    ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -63,18 +76,39 @@ internal fun PreferencesScreen(viewModel: PreferencesViewModel = viewModel()) {
                 )
             }
         }
-        HorizontalDivider()
 
-        LazyColumn(modifier = Modifier.fillMaxSize()) {
-            items(state.entries, key = { it.key }) { entry ->
-                PrefRow(
-                    entry = entry,
-                    onToggle = { viewModel.setBoolean(entry.key, it) },
-                    onEdit = { editing = entry },
-                    onDelete = { viewModel.remove(entry.key) },
-                )
-                HorizontalDivider()
-            }
+        if (state.entries.isEmpty()) {
+            Text(
+                "No entries in this file.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 28.dp, vertical = 12.dp),
+            )
+            return@Column
+        }
+
+        SegmentedColumn(items = state.entries) { entry, shapes ->
+            val isBoolean = entry.type.equals("Boolean", ignoreCase = true)
+            SegmentedListItem(
+                shapes = shapes,
+                colors = scizorSegmentedColors(),
+                supportingContent = { Text("${entry.value}  ·  ${entry.type}") },
+                trailingContent = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        if (isBoolean) {
+                            Switch(
+                                checked = entry.value.toBoolean(),
+                                onCheckedChange = { viewModel.setBoolean(entry.key, it) },
+                            )
+                        }
+                        IconButton(onClick = { viewModel.remove(entry.key) }) {
+                            Icon(Icons.Filled.Delete, contentDescription = "Delete")
+                        }
+                    }
+                },
+                modifier = if (isBoolean) Modifier else Modifier.clickable { editing = entry },
+                content = { Text(entry.key) },
+            )
         }
     }
 
@@ -91,34 +125,6 @@ internal fun PreferencesScreen(viewModel: PreferencesViewModel = viewModel()) {
 }
 
 @Composable
-private fun PrefRow(
-    entry: PrefEntry,
-    onToggle: (Boolean) -> Unit,
-    onEdit: () -> Unit,
-    onDelete: () -> Unit,
-) {
-    val isBoolean = entry.type.equals("Boolean", ignoreCase = true)
-    ListItem(
-        headlineContent = { Text(entry.key) },
-        supportingContent = { Text("${entry.value}  ·  ${entry.type}") },
-        trailingContent = {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                if (isBoolean) {
-                    Switch(
-                        checked = entry.value.toBoolean(),
-                        onCheckedChange = onToggle,
-                    )
-                }
-                IconButton(onClick = onDelete) {
-                    Icon(Icons.Filled.Delete, contentDescription = "Delete")
-                }
-            }
-        },
-        modifier = if (isBoolean) Modifier else Modifier.clickableRow(onEdit),
-    )
-}
-
-@Composable
 private fun EditStringDialog(
     entry: PrefEntry,
     onDismiss: () -> Unit,
@@ -126,36 +132,31 @@ private fun EditStringDialog(
 ) {
     var text by remember { mutableStateOf(entry.value) }
     Dialog(onDismissRequest = onDismiss) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(24.dp),
+        Surface(
+            shape = MaterialTheme.shapes.extraLarge,
+            color = MaterialTheme.colorScheme.surfaceContainerHigh,
         ) {
-            Text(entry.key, style = MaterialTheme.typography.titleMedium)
-            OutlinedTextField(
-                value = text,
-                onValueChange = { text = it },
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 16.dp),
-            )
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End,
+                    .padding(24.dp),
             ) {
-                TextButton(onClick = onDismiss) { Text("Cancel") }
-                Button(onClick = { onSave(text) }) { Text("Save") }
+                Text(entry.key, style = MaterialTheme.typography.titleMedium)
+                OutlinedTextField(
+                    value = text,
+                    onValueChange = { text = it },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 16.dp),
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End,
+                ) {
+                    TextButton(onClick = onDismiss) { Text("Cancel") }
+                    Button(onClick = { onSave(text) }) { Text("Save") }
+                }
             }
         }
     }
 }
-
-@Composable
-private fun EmptyMessage(message: String) {
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Text(message, style = MaterialTheme.typography.bodyMedium)
-    }
-}
-
-private fun Modifier.clickableRow(onClick: () -> Unit): Modifier =
-    this.clickable(onClick = onClick)

@@ -15,16 +15,12 @@ import com.scizor.feature.deviceinfo.DeviceInfo
  */
 internal class MenuViewModel : ViewModel() {
 
-    private val deviceLabels = setOf(
-        "Manufacturer", "Model", "Device", "Android Version", "API Level",
-    )
-
     fun groups(context: Context): List<MenuGroupUi> {
         val groups = mutableListOf<MenuGroupUi>()
 
         val facts = DeviceInfo.collect(context)
-        val device = facts.filter { it.label in deviceLabels }
-        val application = facts.filterNot { it.label in deviceLabels }
+        val device = facts.filter { it.label in DeviceInfo.deviceLabels }
+        val application = facts.filterNot { it.label in DeviceInfo.deviceLabels }
 
         if (device.isNotEmpty()) {
             groups += MenuGroupUi(
