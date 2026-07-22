@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel
 import com.scizor.Scizor
 import com.scizor.core.FeatureRegistry
 import com.scizor.feature.deviceinfo.DeviceInfo
+import com.scizor.feature.network.IpAddress
 
 /**
  * Builds the grouped menu shown by [MenuScreen]: inline Device and Application
@@ -15,7 +16,7 @@ import com.scizor.feature.deviceinfo.DeviceInfo
  */
 internal class MenuViewModel : ViewModel() {
 
-    fun groups(context: Context): List<MenuGroupUi> {
+    fun groups(context: Context, ipAddress: String?): List<MenuGroupUi> {
         val groups = mutableListOf<MenuGroupUi>()
 
         val facts = DeviceInfo.collect(context)
@@ -38,18 +39,21 @@ internal class MenuViewModel : ViewModel() {
         FeatureRegistry.all()
             .groupBy { it.section }
             .forEach { (section, entries) ->
-                groups += MenuGroupUi(
-                    title = section,
-                    rows = entries.map { entry ->
-                        MenuRow.Action(
-                            id = entry.id,
-                            title = entry.title,
-                            subtitle = entry.subtitle,
-                            icon = entry.icon,
-                            action = MenuAction.Open(entry.title, entry.screen),
-                        )
-                    },
-                )
+                val rows = mutableListOf<MenuRow>()
+                // Scyther shows the device's public IP inline atop the Networking section.
+                if (section == "Networking") {
+                    rows += MenuRow.Info("ip_address", "IP Address", ipAddress ?: "Loading…")
+                }
+                rows += entries.map { entry ->
+                    MenuRow.Action(
+                        id = entry.id,
+                        title = entry.title,
+                        subtitle = entry.subtitle,
+                        icon = entry.icon,
+                        action = MenuAction.Open(entry.title, entry.screen),
+                    )
+                }
+                groups += MenuGroupUi(title = section, rows = rows)
             }
 
         val developerOptions = Scizor.developerOptions

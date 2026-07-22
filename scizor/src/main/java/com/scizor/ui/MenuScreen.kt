@@ -29,7 +29,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -49,7 +52,9 @@ internal fun MenuScreen(
     viewModel: MenuViewModel = viewModel(),
 ) {
     val context = LocalContext.current
-    val groups = viewModel.groups(context)
+    val ipAddress by com.scizor.feature.network.IpAddress.value.collectAsStateWithLifecycle()
+    LaunchedEffect(Unit) { com.scizor.feature.network.IpAddress.load() }
+    val groups = viewModel.groups(context, ipAddress)
 
     if (groups.isEmpty()) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -141,7 +146,7 @@ private fun ActionSegment(
     SegmentedListItem(
         onClick = {
             when (val action = row.action) {
-                is MenuAction.Open -> navigator.push(action.title, action.screen)
+                is MenuAction.Open -> navigator.push(action.title) { action.screen(navigator) }
                 is MenuAction.Run -> action.block()
             }
         },

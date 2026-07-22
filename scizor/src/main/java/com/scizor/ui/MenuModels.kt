@@ -5,8 +5,11 @@ import androidx.compose.ui.graphics.vector.ImageVector
 
 /** What happens when a menu item is tapped. */
 internal sealed interface MenuAction {
-    /** Navigate to a feature [screen]. */
-    data class Open(val title: String, val screen: @Composable () -> Unit) : MenuAction
+    /** Navigate to a feature [screen] (which receives the navigator for child pages). */
+    data class Open(
+        val title: String,
+        val screen: @Composable (ScizorNavigator) -> Unit,
+    ) : MenuAction
 
     /** Run an arbitrary [block] (used by custom developer options). */
     data class Run(val block: () -> Unit) : MenuAction

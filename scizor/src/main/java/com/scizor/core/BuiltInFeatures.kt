@@ -28,7 +28,7 @@ internal fun registerBuiltInFeatures() {
             subtitle = "Inspect HTTP traffic, export cURL",
             icon = Icons.Filled.CompareArrows,
             section = "Networking",
-            screen = { NetworkScreen() },
+            screen = { NetworkScreen(it) },
         ),
     )
     FeatureRegistry.register(

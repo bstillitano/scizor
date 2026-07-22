@@ -2,21 +2,23 @@ package com.scizor.core
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.vector.ImageVector
+import com.scizor.ui.ScizorNavigator
 
 /**
  * A single entry in the Scizor debug menu, contributed by a feature module.
  *
  * @param id stable identifier, used to de-duplicate re-registration.
  * @param section group header the entry is listed under.
- * @param screen the Composable shown when the entry is tapped.
+ * @param screen the Composable shown when the entry is tapped. Receives the
+ *   [ScizorNavigator] so a feature can push its own child pages.
  */
-data class ScizorMenuEntry(
+internal data class ScizorMenuEntry(
     val id: String,
     val title: String,
     val subtitle: String? = null,
     val icon: ImageVector,
     val section: String,
-    val screen: @Composable () -> Unit,
+    val screen: @Composable (ScizorNavigator) -> Unit,
 )
 
 /**

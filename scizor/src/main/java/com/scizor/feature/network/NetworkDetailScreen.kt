@@ -8,10 +8,12 @@ package com.scizor.feature.network
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Text
@@ -19,13 +21,22 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.scizor.ui.ScizorNavigator
 import com.scizor.ui.SectionHeader
 import com.scizor.ui.SegmentedColumn
 import com.scizor.ui.scizorSegmentedColors
+import java.text.DateFormat
+import java.util.Date
+
+private sealed interface OverviewRow {
+    data class Value(val label: String, val value: String) : OverviewRow
+    data class Link(val label: String, val preview: String, val onOpen: () -> Unit) : OverviewRow
+}
 
 @Composable
-internal fun NetworkDetailScreen(transaction: NetworkTransaction) {
+internal fun NetworkDetailScreen(transaction: NetworkTransaction, navigator: ScizorNavigator) {
     val clipboard = LocalClipboardManager.current
 
     Column(
@@ -33,26 +44,61 @@ internal fun NetworkDetailScreen(transaction: NetworkTransaction) {
             .fillMaxSize()
             .verticalScroll(rememberScrollState()),
     ) {
-        // Overview
         val overview = buildList {
-            add("URL" to transaction.url)
-            add("Method" to transaction.method)
-            add("Status" to (transaction.error?.let { "error: $it" } ?: transaction.status?.toString() ?: "—"))
-            add("Duration" to (transaction.durationMs?.let { "$it ms" } ?: "—"))
-            transaction.responseBody?.let { add("Response size" to "${it.toByteArray().size} bytes") }
-        }
-        SectionHeader("Overview")
-        SegmentedColumn(items = overview) { (label, value), shapes ->
-            SegmentedListItem(
-                shapes = shapes,
-                colors = scizorSegmentedColors(),
-                supportingContent = { Text(value) },
-                modifier = Modifier.copyOnLongPress(label, value, clipboard),
-                content = { Text(label) },
+            add(
+                OverviewRow.Link("URL", transaction.url) {
+                    navigator.push("Request URL") { TextReaderScreen(transaction.url) }
+                },
+            )
+            add(OverviewRow.Value("Method", transaction.method))
+            add(
+                OverviewRow.Value(
+                    "Status",
+                    transaction.error?.let { "error: $it" } ?: transaction.status?.toString() ?: "—",
+                ),
+            )
+            add(OverviewRow.Value("Duration", transaction.durationMs?.let { "$it ms" } ?: "—"))
+            transaction.responseBody?.let {
+                add(OverviewRow.Value("Response size", "${it.toByteArray().size} bytes"))
+            }
+            add(
+                OverviewRow.Value(
+                    "Date",
+                    DateFormat.getDateTimeInstance().format(Date(transaction.timestamp)),
+                ),
             )
         }
 
-        // Request cURL
+        SectionHeader("Overview")
+        SegmentedColumn(items = overview) { row, shapes ->
+            when (row) {
+                is OverviewRow.Value -> SegmentedListItem(
+                    shapes = shapes,
+                    colors = scizorSegmentedColors(),
+                    trailingContent = {
+                        Text(
+                            text = row.value,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    },
+                    content = { Text(row.label) },
+                )
+                is OverviewRow.Link -> SegmentedListItem(
+                    onClick = row.onOpen,
+                    shapes = shapes,
+                    colors = scizorSegmentedColors(),
+                    supportingContent = {
+                        Text(row.preview, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    },
+                    trailingContent = { Chevron() },
+                    content = { Text(row.label) },
+                )
+            }
+        }
+
         SectionHeader("Request")
         SegmentedColumn(items = listOf("Copy as cURL")) { title, shapes ->
             SegmentedListItem(
@@ -64,9 +110,9 @@ internal fun NetworkDetailScreen(transaction: NetworkTransaction) {
         }
 
         HeadersSection("Request Headers", transaction.requestHeaders, "No headers sent")
-        BodySection("Request Body", transaction.requestBody, "No content sent")
+        BodySection("Request Body", transaction.requestBody, "No content sent", navigator)
         HeadersSection("Response Headers", transaction.responseHeaders, "No headers received")
-        BodySection("Response Body", transaction.responseBody, "No data received")
+        BodySection("Response Body", transaction.responseBody, "No data received", navigator)
     }
 }
 
@@ -84,26 +130,45 @@ private fun HeadersSection(title: String, headers: Map<String, String>, emptyTex
             shapes = shapes,
             colors = scizorSegmentedColors(),
             supportingContent = { Text(entry.value) },
-            modifier = Modifier.copyOnLongPress(entry.key, entry.value, clipboard),
+            modifier = Modifier.combinedClickable(
+                onClick = {},
+                onLongClick = { clipboard.setText(AnnotatedString("${entry.key}: ${entry.value}")) },
+            ),
             content = { Text(entry.key) },
         )
     }
 }
 
 @Composable
-private fun BodySection(title: String, body: String?, emptyText: String) {
+private fun BodySection(
+    title: String,
+    body: String?,
+    emptyText: String,
+    navigator: ScizorNavigator,
+) {
     SectionHeader(title)
     if (body.isNullOrEmpty()) {
         EmptyRow(emptyText)
         return
     }
-    Text(
-        text = body,
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurface,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 28.dp, vertical = 8.dp),
+    SegmentedColumn(items = listOf("View ${title.lowercase()}")) { label, shapes ->
+        SegmentedListItem(
+            onClick = { navigator.push(title) { TextReaderScreen(body) } },
+            shapes = shapes,
+            colors = scizorSegmentedColors(),
+            supportingContent = { Text("${body.length} chars") },
+            trailingContent = { Chevron() },
+            content = { Text(label) },
+        )
+    }
+}
+
+@Composable
+private fun Chevron() {
+    Icon(
+        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+        contentDescription = null,
+        tint = MaterialTheme.colorScheme.onSurfaceVariant,
     )
 }
 
@@ -116,12 +181,3 @@ private fun EmptyRow(text: String) {
         modifier = Modifier.padding(horizontal = 28.dp, vertical = 8.dp),
     )
 }
-
-private fun Modifier.copyOnLongPress(
-    label: String,
-    value: String,
-    clipboard: androidx.compose.ui.platform.ClipboardManager,
-): Modifier = this.combinedClickable(
-    onClick = {},
-    onLongClick = { clipboard.setText(AnnotatedString("$label: $value")) },
-)

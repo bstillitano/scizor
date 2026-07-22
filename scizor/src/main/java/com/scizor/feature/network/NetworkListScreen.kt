@@ -1,13 +1,18 @@
 package com.scizor.feature.network
 
-import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -15,7 +20,6 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -27,27 +31,27 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.scizor.ui.ScizorNavigator
 
-/** Entry point: shows the transaction list, or a selected transaction's detail. */
+/** Entry point: the transaction list; tapping a row pushes the detail page. */
 @Composable
-internal fun NetworkScreen(viewModel: NetworkViewModel = viewModel()) {
+internal fun NetworkScreen(
+    navigator: ScizorNavigator,
+    viewModel: NetworkViewModel = viewModel(),
+) {
     val transactions by viewModel.transactions.collectAsStateWithLifecycle()
-    var selectedId by remember { mutableStateOf<Long?>(null) }
-
-    val selected = selectedId?.let { id -> transactions.firstOrNull { it.id == id } }
-    if (selected != null) {
-        BackHandler { selectedId = null }
-        NetworkDetailScreen(transaction = selected)
-    } else {
-        NetworkList(
-            transactions = transactions,
-            onSelect = { selectedId = it.id },
-            onClear = viewModel::clear,
-        )
-    }
+    NetworkList(
+        transactions = transactions,
+        onSelect = { tx ->
+            navigator.push("Request Details") { NetworkDetailScreen(tx, navigator) }
+        },
+        onClear = viewModel::clear,
+    )
 }
 
 @Composable
@@ -101,30 +105,71 @@ private fun NetworkList(
 
         LazyColumn(modifier = Modifier.fillMaxSize()) {
             items(filtered, key = { it.id }) { tx ->
-                ListItem(
-                    headlineContent = { Text("${tx.method}  ${tx.path}") },
-                    supportingContent = {
-                        val timing = tx.durationMs?.let { "  ·  ${it} ms" } ?: ""
-                        Text("${tx.host}$timing")
-                    },
-                    trailingContent = { StatusLabel(tx) },
-                    modifier = Modifier.clickable { onSelect(tx) },
-                )
+                TransactionRow(tx = tx, onClick = { onSelect(tx) })
                 HorizontalDivider()
             }
         }
     }
 }
 
+/** Mirrors Scyther's HTTPRequestView: a status-colored bar, method/code/duration, then the URL. */
 @Composable
-private fun StatusLabel(tx: NetworkTransaction) {
-    val text = tx.error?.let { "ERR" } ?: tx.status?.toString() ?: "…"
-    val color = when {
-        tx.error != null -> Color(0xFFD23B3B)
-        tx.status == null -> Color.Unspecified
-        tx.status in 200..299 -> Color(0xFF2E7D32)
-        tx.status in 400..599 -> Color(0xFFD23B3B)
-        else -> Color(0xFFE0A100)
+private fun TransactionRow(tx: NetworkTransaction, onClick: () -> Unit) {
+    val statusColor = statusColor(tx)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(IntrinsicSize.Min)
+            .clickable(onClick = onClick),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier = Modifier
+                .width(4.dp)
+                .fillMaxHeight()
+                .background(statusColor),
+        )
+        Column(
+            modifier = Modifier.padding(start = 12.dp, top = 10.dp, bottom = 10.dp),
+        ) {
+            Text(
+                text = tx.method,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Text(
+                text = tx.error?.let { "ERR" } ?: tx.status?.toString() ?: "0",
+                style = MaterialTheme.typography.bodyMedium,
+                color = statusColor,
+            )
+            Text(
+                text = "${tx.durationMs ?: 0} ms",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Spacer(Modifier.width(16.dp))
+        Text(
+            text = tx.url,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 3,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier
+                .weight(1f)
+                .padding(end = 16.dp),
+        )
     }
-    Text(text = text, color = color, style = MaterialTheme.typography.labelLarge)
+}
+
+private fun statusColor(tx: NetworkTransaction): Color = when {
+    tx.error != null -> Color(0xFF9E9E9E)
+    tx.status == null || tx.status < 1 -> Color(0xFF9E9E9E)
+    tx.status < 100 -> Color(0xFF2196F3)
+    tx.status < 200 -> Color(0xFFFF9800)
+    tx.status < 300 -> Color(0xFF2E7D32)
+    tx.status < 400 -> Color(0xFF9C27B0)
+    tx.status < 600 -> Color(0xFFD23B3B)
+    else -> Color(0xFF9E9E9E)
 }
