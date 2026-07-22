@@ -52,6 +52,8 @@ class ScizorStore internal constructor(private val context: Context) {
         return cache[prefixed(key)] as? String ?: default
     }
 
+    fun contains(key: String): Boolean = cache.containsKey(prefixed(key))
+
     fun putBoolean(key: String, value: Boolean) {
         val full = prefixed(key)
         cache[full] = value

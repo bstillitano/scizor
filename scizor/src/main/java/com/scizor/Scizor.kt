@@ -30,6 +30,9 @@ object Scizor {
     internal lateinit var store: ScizorStore
         private set
 
+    /** The store if [start] has run, else null — for features that may be touched pre-start. */
+    internal fun storeOrNull(): ScizorStore? = if (::store.isInitialized) store else null
+
     /** Gesture that opens the menu. Defaults to [ScizorGesture.SHAKE]. */
     var invocationGesture: ScizorGesture = ScizorGesture.SHAKE
         set(value) {
