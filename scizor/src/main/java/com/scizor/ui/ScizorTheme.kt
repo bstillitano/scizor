@@ -1,52 +1,52 @@
 package com.scizor.ui
 
+import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Shapes
 import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.dynamicDarkColorScheme
+import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 
-// Accent matches Scyther's iOS system blue.
-private val ScizorBlue = Color(0xFF007AFF)
-private val ScizorBlueDark = Color(0xFF0A84FF)
+// Branded fallback seed for devices without dynamic color (pre-Android 12).
+private val FallbackLight = lightColorScheme()
+private val FallbackDark = darkColorScheme()
 
-// iOS-style "systemGrouped" surfaces: a tinted background with white/dark cards.
-private val LightColors = lightColorScheme(
-    primary = ScizorBlue,
-    onPrimary = Color.White,
-    background = Color(0xFFF2F2F7),
-    onBackground = Color(0xFF000000),
-    surface = Color(0xFFFFFFFF),
-    onSurface = Color(0xFF000000),
-    surfaceVariant = Color(0xFFFFFFFF),
-    onSurfaceVariant = Color(0xFF8E8E93),
-    outlineVariant = Color(0xFFC6C6C8),
-)
-
-private val DarkColors = darkColorScheme(
-    primary = ScizorBlueDark,
-    onPrimary = Color.White,
-    background = Color(0xFF000000),
-    onBackground = Color(0xFFFFFFFF),
-    surface = Color(0xFF1C1C1E),
-    onSurface = Color(0xFFFFFFFF),
-    surfaceVariant = Color(0xFF1C1C1E),
-    onSurfaceVariant = Color(0xFF8E8E93),
-    outlineVariant = Color(0xFF38383A),
+// Expressive shape scale — generous rounding is a hallmark of Material 3 Expressive.
+private val ScizorShapes = Shapes(
+    extraSmall = RoundedCornerShape(8.dp),
+    small = RoundedCornerShape(12.dp),
+    medium = RoundedCornerShape(16.dp),
+    large = RoundedCornerShape(24.dp),
+    extraLarge = RoundedCornerShape(28.dp),
 )
 
 /**
- * Material 3 theme for all Scizor UI. Follows the host device's dark/light
- * setting and mirrors Scyther's grouped-inset visual language.
+ * Material 3 (Expressive) theme for all Scizor UI. Uses Material You dynamic
+ * color on Android 12+, falling back to the M3 baseline scheme, and follows the
+ * host device's dark/light setting.
  */
 @Composable
 internal fun ScizorTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit,
 ) {
+    val context = LocalContext.current
+    val colorScheme = when {
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.S ->
+            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+        darkTheme -> FallbackDark
+        else -> FallbackLight
+    }
+
     MaterialTheme(
-        colorScheme = if (darkTheme) DarkColors else LightColors,
+        colorScheme = colorScheme,
+        shapes = ScizorShapes,
         content = content,
     )
 }

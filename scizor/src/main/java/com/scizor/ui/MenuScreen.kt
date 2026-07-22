@@ -5,7 +5,6 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -18,7 +17,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.Icon
@@ -26,23 +25,21 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
 import androidx.lifecycle.viewmodel.compose.viewModel
-
-private val CardShape = RoundedCornerShape(12.dp)
 
 @Composable
 internal fun MenuScreen(
@@ -67,7 +64,7 @@ internal fun MenuScreen(
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background),
+            .background(MaterialTheme.colorScheme.surface),
         contentPadding = PaddingValues(bottom = 32.dp),
     ) {
         item(key = "app_header") { AppHeader() }
@@ -77,8 +74,9 @@ internal fun MenuScreen(
                 Text(
                     text = group.title,
                     style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 22.dp, bottom = 8.dp),
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(start = 28.dp, end = 28.dp, top = 24.dp, bottom = 8.dp),
                 )
             }
             item(key = "card_${group.title}") {
@@ -106,7 +104,7 @@ private fun AppHeader() {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 16.dp),
+            .padding(horizontal = 24.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (icon != null) {
@@ -114,17 +112,17 @@ private fun AppHeader() {
                 bitmap = icon,
                 contentDescription = null,
                 modifier = Modifier
-                    .size(52.dp)
-                    .clip(RoundedCornerShape(12.dp)),
+                    .size(56.dp)
+                    .clip(CircleShape),
             )
             Spacer(Modifier.width(16.dp))
         }
         Column {
             Text(
                 text = label,
-                style = MaterialTheme.typography.titleLarge,
+                style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onBackground,
+                color = MaterialTheme.colorScheme.onSurface,
             )
             Text(
                 text = context.packageName,
@@ -138,8 +136,8 @@ private fun AppHeader() {
 @Composable
 private fun MenuCard(rows: List<MenuRow>, navigator: ScizorNavigator) {
     Surface(
-        color = MaterialTheme.colorScheme.surface,
-        shape = CardShape,
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        shape = MaterialTheme.shapes.large,
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp),
@@ -151,7 +149,13 @@ private fun MenuCard(rows: List<MenuRow>, navigator: ScizorNavigator) {
                     is MenuRow.Action -> ActionRowItem(row, navigator)
                 }
                 if (index < rows.lastIndex) {
-                    RowDivider(insetStart = if (row is MenuRow.Action) 56.dp else 16.dp)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(start = if (row is MenuRow.Action) 68.dp else 20.dp)
+                            .height(1.dp)
+                            .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
+                    )
                 }
             }
         }
@@ -171,7 +175,7 @@ private fun InfoRowItem(row: MenuRow.Info) {
                     clipboard.setText(AnnotatedString("${row.label}: ${row.value}"))
                 },
             )
-            .padding(horizontal = 16.dp, vertical = 13.dp),
+            .padding(horizontal = 20.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
@@ -186,7 +190,7 @@ private fun InfoRowItem(row: MenuRow.Info) {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            textAlign = androidx.compose.ui.text.style.TextAlign.End,
+            textAlign = TextAlign.End,
             modifier = Modifier.weight(1f),
         )
     }
@@ -206,12 +210,20 @@ private fun ActionRowItem(row: MenuRow.Action, navigator: ScizorNavigator) {
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(
-            imageVector = row.icon,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(24.dp),
-        )
+        Box(
+            modifier = Modifier
+                .size(40.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.secondaryContainer),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = row.icon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                modifier = Modifier.size(22.dp),
+            )
+        }
         Spacer(Modifier.width(16.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
@@ -222,7 +234,7 @@ private fun ActionRowItem(row: MenuRow.Action, navigator: ScizorNavigator) {
             if (row.subtitle != null) {
                 Text(
                     text = row.subtitle,
-                    style = MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
@@ -233,15 +245,4 @@ private fun ActionRowItem(row: MenuRow.Action, navigator: ScizorNavigator) {
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
-}
-
-@Composable
-private fun RowDivider(insetStart: androidx.compose.ui.unit.Dp) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(start = insetStart)
-            .height(0.5.dp)
-            .background(MaterialTheme.colorScheme.outlineVariant),
-    )
 }

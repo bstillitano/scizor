@@ -6,8 +6,6 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
@@ -25,7 +23,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
 import com.scizor.ui.MenuScreen
 import com.scizor.ui.ScizorNavigator
 import com.scizor.ui.ScizorTheme
@@ -60,7 +57,7 @@ private fun ScizorHost(onClose: () -> Unit) {
     }
 
     Scaffold(
-        containerColor = MaterialTheme.colorScheme.background,
+        containerColor = MaterialTheme.colorScheme.surface,
         topBar = {
             CenterAlignedTopAppBar(
                 title = {
@@ -68,9 +65,7 @@ private fun ScizorHost(onClose: () -> Unit) {
                 },
                 navigationIcon = {
                     val atRoot = navigator.stack.isEmpty()
-                    CircleButton(
-                        onClick = { if (!navigator.pop()) onClose() },
-                    ) {
+                    IconButton(onClick = { if (!navigator.pop()) onClose() }) {
                         Icon(
                             imageVector = if (atRoot) {
                                 Icons.Filled.Close
@@ -78,18 +73,19 @@ private fun ScizorHost(onClose: () -> Unit) {
                                 Icons.AutoMirrored.Filled.ArrowBack
                             },
                             contentDescription = if (atRoot) "Close" else "Back",
-                            tint = MaterialTheme.colorScheme.onSurface,
                         )
                     }
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background,
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
                 ),
             )
         },
     ) { padding ->
         Surface(
-            color = MaterialTheme.colorScheme.background,
+            color = MaterialTheme.colorScheme.surface,
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding),
@@ -101,22 +97,5 @@ private fun ScizorHost(onClose: () -> Unit) {
                 destination.content()
             }
         }
-    }
-}
-
-@Composable
-private fun CircleButton(
-    onClick: () -> Unit,
-    content: @Composable () -> Unit,
-) {
-    Surface(
-        color = MaterialTheme.colorScheme.surface,
-        shape = CircleShape,
-        shadowElevation = 1.dp,
-        modifier = Modifier
-            .padding(start = 8.dp)
-            .size(36.dp),
-    ) {
-        IconButton(onClick = onClick) { content() }
     }
 }
