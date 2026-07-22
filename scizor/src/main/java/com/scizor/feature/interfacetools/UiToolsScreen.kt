@@ -2,6 +2,8 @@
 
 package com.scizor.feature.interfacetools
 
+import android.content.Intent
+import android.provider.Settings
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -24,7 +26,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.scizor.ui.ScizorNavigator
 import com.scizor.ui.SectionHeader
@@ -33,6 +37,7 @@ import com.scizor.ui.scizorSegmentedColors
 
 @Composable
 internal fun UiToolsScreen(navigator: ScizorNavigator) {
+    val context = LocalContext.current
     val grid by InterfaceToolkit.grid.collectAsStateWithLifecycle()
     val frames by InterfaceToolkit.frames.collectAsStateWithLifecycle()
     val sizes by InterfaceToolkit.sizes.collectAsStateWithLifecycle()
@@ -40,15 +45,38 @@ internal fun UiToolsScreen(navigator: ScizorNavigator) {
     val fps by InterfaceToolkit.fps.collectAsStateWithLifecycle()
     val slow by InterfaceToolkit.slowAnimations.collectAsStateWithLifecycle()
 
+    // Overlays live in a system window, so enabling one needs "Display over other apps".
+    fun toggleOverlay(setter: (Boolean) -> Unit): (Boolean) -> Unit = { on ->
+        setter(on)
+        if (on && !OverlayController.canDrawOverlays(context)) {
+            runCatching {
+                context.startActivity(
+                    Intent(
+                        Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                        "package:${context.packageName}".toUri(),
+                    ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                )
+            }
+        }
+    }
+
     Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+        if (!OverlayController.canDrawOverlays(context)) {
+            Text(
+                "Overlays need the “Display over other apps” permission. Turning one on will ask for it.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 28.dp, vertical = 12.dp),
+            )
+        }
         SectionHeader("Overlays")
         SegmentedColumn(items = OVERLAY_ROWS) { row, shapes ->
             val (checked, onChange, settings) = when (row) {
-                Overlay.GRID -> Triple(grid, InterfaceToolkit::setGrid) { navigator.push("Grid") { GridSettingsScreen() } }
-                Overlay.FRAMES -> Triple(frames, InterfaceToolkit::setFrames, null)
-                Overlay.SIZES -> Triple(sizes, InterfaceToolkit::setSizes, null)
-                Overlay.TOUCHES -> Triple(touches, InterfaceToolkit::setTouches) { navigator.push("Touches") { TouchSettingsScreen() } }
-                Overlay.FPS -> Triple(fps, InterfaceToolkit::setFps) { navigator.push("FPS") { FpsSettingsScreen() } }
+                Overlay.GRID -> Triple(grid, toggleOverlay(InterfaceToolkit::setGrid)) { navigator.push("Grid") { GridSettingsScreen() } }
+                Overlay.FRAMES -> Triple(frames, toggleOverlay(InterfaceToolkit::setFrames), null)
+                Overlay.SIZES -> Triple(sizes, toggleOverlay(InterfaceToolkit::setSizes), null)
+                Overlay.TOUCHES -> Triple(touches, toggleOverlay(InterfaceToolkit::setTouches)) { navigator.push("Touches") { TouchSettingsScreen() } }
+                Overlay.FPS -> Triple(fps, toggleOverlay(InterfaceToolkit::setFps)) { navigator.push("FPS") { FpsSettingsScreen() } }
             }
             SegmentedListItem(
                 shapes = shapes,
@@ -83,7 +111,7 @@ internal fun UiToolsScreen(navigator: ScizorNavigator) {
         }
 
         Text(
-            "Overlays draw on top of your app's own screens, not the Scizor menu.",
+            "Overlays draw over everything on screen, including the Scizor menu and system bars.",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(horizontal = 28.dp, vertical = 12.dp),

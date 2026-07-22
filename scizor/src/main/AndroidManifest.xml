@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!-- Lets the interface-tool overlays (grid, FPS, touches, frames) draw over the
+         whole screen, including the Scizor menu and system bars. Requested at runtime
+         when the user enables an overlay tool. -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+
     <application>
         <activity
             android:name="com.scizor.core.ScizorActivity"

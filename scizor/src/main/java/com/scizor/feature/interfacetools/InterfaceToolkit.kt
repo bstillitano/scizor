@@ -117,9 +117,13 @@ internal object InterfaceToolkit {
         _touchLog.value = emptyList()
     }
 
+    /** Invoked whenever an overlay on/off toggle changes, so the host can add/remove the overlay window. */
+    var onOverlayChanged: (() -> Unit)? = null
+
     private fun update(flow: MutableStateFlow<Boolean>, key: String, value: Boolean) {
         flow.value = value
         store?.putBoolean(key, value)
+        onOverlayChanged?.invoke()
     }
 
     private fun updateInt(flow: MutableStateFlow<Int>, key: String, value: Int) {

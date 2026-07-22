@@ -8,6 +8,8 @@ import android.view.Choreographer
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
+import androidx.compose.ui.semantics.SemanticsNode
+import androidx.compose.ui.semantics.SemanticsOwner
 
 /**
  * A pass-through overlay added on top of each Activity's content. Draws the
@@ -26,6 +28,13 @@ internal class ScizorOverlayView(context: Context) : View(context) {
 
     /** Fading marks left behind when a pointer lifts. */
     private val trails = ArrayDeque<Touch>()
+
+    /**
+     * The foreground activity's decor view, used to draw view frames/sizes. Since
+     * this overlay lives in its own full-screen system window, everything is drawn
+     * in screen coordinates.
+     */
+    var contentRoot: View? = null
 
     private var lastFrameNanos = 0L
     private var currentFps = 0
@@ -93,10 +102,13 @@ internal class ScizorOverlayView(context: Context) : View(context) {
             }
             return
         }
-        // Window-callback coordinates are window-relative; map into overlay-local space.
-        val loc = IntArray(2).also { getLocationInWindow(it) }
-        fun x(i: Int) = event.getX(i) - loc[0]
-        fun y(i: Int) = event.getY(i) - loc[1]
+        // Events arrive in the app window's coordinate space; this overlay is a
+        // full-screen system window, so translate into screen coordinates. The raw
+        // offset (screen minus local for pointer 0) is the same for every pointer.
+        val offsetX = event.rawX - event.getX(0)
+        val offsetY = event.rawY - event.getY(0)
+        fun x(i: Int) = event.getX(i) + offsetX
+        fun y(i: Int) = event.getY(i) + offsetY
         val now = System.currentTimeMillis()
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN, MotionEvent.ACTION_POINTER_DOWN -> {
@@ -146,32 +158,55 @@ internal class ScizorOverlayView(context: Context) : View(context) {
     }
 
     private fun drawBounds(canvas: Canvas) {
-        val root = parent as? ViewGroup ?: return
+        val root = contentRoot ?: return
         val drawFrames = InterfaceToolkit.frames.value
         val drawSizes = InterfaceToolkit.sizes.value
-        val overlayLoc = IntArray(2).also { getLocationInWindow(it) }
+        val screen = IntArray(2)
         fun visit(view: View) {
-            if (view === this) return
             if (view.width > 0 && view.height > 0 && view.visibility == VISIBLE) {
-                val loc = IntArray(2).also { view.getLocationInWindow(it) }
-                val left = (loc[0] - overlayLoc[0]).toFloat()
-                val top = (loc[1] - overlayLoc[1]).toFloat()
-                if (drawFrames) {
-                    canvas.drawRect(left, top, left + view.width, top + view.height, boundsPaint)
+                // A Compose UI is one big view, so walk its semantics tree instead.
+                if (view.javaClass.simpleName == "AndroidComposeView") {
+                    drawComposeBounds(canvas, view, drawFrames, drawSizes)
+                } else {
+                    view.getLocationOnScreen(screen)
+                    val left = screen[0].toFloat()
+                    val top = screen[1].toFloat()
+                    if (drawFrames) canvas.drawRect(left, top, left + view.width, top + view.height, boundsPaint)
+                    if (drawSizes) drawSizeLabel(canvas, left, top, view.width, view.height)
                 }
-                if (drawSizes) drawSizeLabel(canvas, view, left, top)
             }
             if (view is ViewGroup) {
                 for (i in 0 until view.childCount) visit(view.getChildAt(i))
             }
         }
-        for (i in 0 until root.childCount) visit(root.getChildAt(i))
+        visit(root)
     }
 
-    private fun drawSizeLabel(canvas: Canvas, view: View, left: Float, top: Float) {
-        val w = (view.width / density).toInt()
-        val h = (view.height / density).toInt()
-        val label = "${w}×${h}"
+    /** Draws frames/sizes for a Jetpack Compose hierarchy via its semantics tree. */
+    private fun drawComposeBounds(canvas: Canvas, composeView: View, drawFrames: Boolean, drawSizes: Boolean) {
+        runCatching {
+            val owner = composeView.javaClass.methods
+                .firstOrNull { it.name == "getSemanticsOwner" }
+                ?.apply { isAccessible = true }
+                ?.invoke(composeView) as? SemanticsOwner ?: return
+            // boundsInWindow is relative to the app window; add the window's screen origin.
+            val win = IntArray(2).also { composeView.rootView.getLocationOnScreen(it) }
+            fun walk(node: SemanticsNode) {
+                val b = node.boundsInWindow
+                if (b.width > 0f && b.height > 0f) {
+                    val l = b.left + win[0]
+                    val t = b.top + win[1]
+                    if (drawFrames) canvas.drawRect(l, t, b.right + win[0], b.bottom + win[1], boundsPaint)
+                    if (drawSizes) drawSizeLabel(canvas, l, t, b.width.toInt(), b.height.toInt())
+                }
+                node.children.forEach { walk(it) }
+            }
+            walk(owner.unmergedRootSemanticsNode)
+        }
+    }
+
+    private fun drawSizeLabel(canvas: Canvas, left: Float, top: Float, widthPx: Int, heightPx: Int) {
+        val label = "${(widthPx / density).toInt()}×${(heightPx / density).toInt()}"
         val pad = 2f * density
         val tw = sizeLabelText.measureText(label)
         val th = sizeLabelText.textSize
