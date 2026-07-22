@@ -11,16 +11,23 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DirectionsRun
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SegmentedListItem
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
@@ -34,8 +41,10 @@ import com.scizor.ui.scizorSegmentedColors
 internal fun LocationSpooferScreen() {
     val context = LocalContext.current
     val active by LocationSpoofer.active.collectAsStateWithLifecycle()
-    var lat by remember { mutableStateOf("") }
-    var lng by remember { mutableStateOf("") }
+    val last = remember { LocationSpoofer.lastLocation() }
+    var lat by remember { mutableStateOf(last?.latitude?.toString().orEmpty()) }
+    var lng by remember { mutableStateOf(last?.longitude?.toString().orEmpty()) }
+    var query by remember { mutableStateOf("") }
 
     fun apply(latitude: Double, longitude: Double, label: String) {
         val ok = LocationSpoofer.start(context, latitude, longitude, label)
@@ -46,26 +55,60 @@ internal fun LocationSpooferScreen() {
         ).show()
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState()),
-    ) {
+    fun replay(route: Route) {
+        val ok = LocationSpoofer.startRoute(context, route)
+        Toast.makeText(
+            context,
+            if (ok) "Replaying ${route.name}" else "Failed — set Scizor as the mock location app",
+            Toast.LENGTH_SHORT,
+        ).show()
+    }
+
+    Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+        // Master toggle
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text("Mock location", style = MaterialTheme.typography.titleMedium)
+                Text(
+                    active?.let {
+                        if (it.moving) "Moving · ${it.label}" else "Active · ${it.label}"
+                    } ?: "Off",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Switch(
+                checked = active != null,
+                onCheckedChange = { on ->
+                    if (!on) {
+                        LocationSpoofer.stop(context)
+                    } else {
+                        val la = lat.toDoubleOrNull()
+                        val lo = lng.toDoubleOrNull()
+                        if (la != null && lo != null) apply(la, lo, "Custom") else apply(37.7749, -122.4194, "San Francisco")
+                    }
+                },
+            )
+        }
+
         active?.let { mock ->
-            SectionHeader("Active")
             SegmentedColumn(items = listOf(mock)) { m, shapes ->
                 SegmentedListItem(
                     shapes = shapes,
                     colors = scizorSegmentedColors(),
-                    supportingContent = { Text("${m.latitude}, ${m.longitude}") },
+                    leadingContent = {
+                        Icon(
+                            if (m.moving) Icons.Filled.DirectionsRun else Icons.Filled.LocationOn,
+                            null,
+                            tint = MaterialTheme.colorScheme.primary,
+                        )
+                    },
+                    supportingContent = { Text("%.5f, %.5f".format(m.latitude, m.longitude)) },
                     content = { Text(m.label) },
                 )
-            }
-            Button(
-                onClick = { LocationSpoofer.stop(context) },
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-            ) {
-                Text("Stop mocking")
             }
         }
 
@@ -92,17 +135,35 @@ internal fun LocationSpooferScreen() {
             onClick = { apply(lat.toDouble(), lng.toDouble(), "Custom") },
             enabled = lat.toDoubleOrNull() != null && lng.toDoubleOrNull() != null,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-        ) {
-            Text("Apply custom location")
+        ) { Text("Apply custom location") }
+
+        SectionHeader("Routes")
+        SegmentedColumn(items = LocationSpoofer.routes) { route, shapes ->
+            SegmentedListItem(
+                onClick = { replay(route) },
+                shapes = shapes,
+                colors = scizorSegmentedColors(),
+                leadingContent = { Icon(Icons.Filled.PlayArrow, null, tint = MaterialTheme.colorScheme.primary) },
+                supportingContent = { Text("${route.waypoints.size} waypoints") },
+                content = { Text(route.name) },
+            )
         }
 
-        SectionHeader("Presets")
-        SegmentedColumn(items = LocationSpoofer.presets) { preset, shapes ->
+        SectionHeader("Cities")
+        OutlinedTextField(
+            value = query,
+            onValueChange = { query = it },
+            label = { Text("Search cities") },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+        )
+        val cities = LocationSpoofer.presets.filter { query.isBlank() || it.name.contains(query, true) }
+        SegmentedColumn(items = cities) { preset, shapes ->
             SegmentedListItem(
                 onClick = { apply(preset.latitude, preset.longitude, preset.name) },
                 shapes = shapes,
                 colors = scizorSegmentedColors(),
-                supportingContent = { Text("${preset.latitude}, ${preset.longitude}") },
+                supportingContent = { Text("%.4f, %.4f".format(preset.latitude, preset.longitude)) },
                 content = { Text(preset.name) },
             )
         }

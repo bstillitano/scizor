@@ -61,6 +61,13 @@ class SampleApp : Application() {
             },
         )
 
+        Scizor.deepLinkPresets = listOf(
+            com.scizor.feature.deeplink.DeepLinkPreset("Home", "scizorsample://home"),
+            com.scizor.feature.deeplink.DeepLinkPreset("Profile", "scizorsample://user/42"),
+            com.scizor.feature.deeplink.DeepLinkPreset("Settings", "scizorsample://settings"),
+            com.scizor.feature.deeplink.DeepLinkPreset("Example.com", "https://example.com"),
+        )
+
         Scizor.developerOptions = listOf(
             DeveloperOption(title = "Log a test message") {
                 Log.i("ScizorSample", "Test log from developer option")

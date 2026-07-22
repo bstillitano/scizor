@@ -47,6 +47,9 @@ internal fun scizorApiSurface(application: Application) {
     Scizor.interfacePreviews = listOf(
         com.scizor.feature.interfacepreviews.InterfacePreview("x") {},
     )
+    Scizor.deepLinkPresets = listOf(
+        com.scizor.feature.deeplink.DeepLinkPreset(name = "n", url = "app://x"),
+    )
     val network: NetworkLogger = Scizor.network
     val flags: FeatureFlags = Scizor.featureFlags
     val servers: ServerConfiguration = Scizor.servers

@@ -3,9 +3,12 @@ package com.scizor.feature.deeplink
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import com.scizor.Scizor
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import org.json.JSONArray
+import org.json.JSONObject
 
 /** A record of a fired deep link. */
 internal data class DeepLinkHistoryEntry(
@@ -17,14 +20,35 @@ internal data class DeepLinkHistoryEntry(
 
 /**
  * Fires deep links / custom URL schemes via an ACTION_VIEW intent and keeps a
- * session history of the results. Mirrors Scyther's Deep Link Tester.
+ * persisted history of the results. Mirrors Scyther's Deep Link Tester.
  */
 internal object DeepLinkTester {
 
     private const val MAX_HISTORY = 50
+    private const val HISTORY_KEY = "deeplink_history"
 
     private val _history = MutableStateFlow<List<DeepLinkHistoryEntry>>(emptyList())
     val history: StateFlow<List<DeepLinkHistoryEntry>> = _history.asStateFlow()
+
+    /** Host-registered presets, surfaced above the history in the tester. */
+    val presets: List<DeepLinkPreset> get() = Scizor.deepLinkPresets
+
+    /** Loads persisted history. Called once from [Scizor.start]. */
+    fun init() {
+        val json = Scizor.storeOrNull()?.string(HISTORY_KEY) ?: return
+        _history.value = runCatching {
+            val array = JSONArray(json)
+            (0 until array.length()).map { i ->
+                val o = array.getJSONObject(i)
+                DeepLinkHistoryEntry(
+                    url = o.getString("url"),
+                    timestamp = o.getLong("ts"),
+                    success = o.getBoolean("ok"),
+                    error = o.optString("err").ifBlank { null },
+                )
+            }
+        }.getOrDefault(emptyList())
+    }
 
     /** Attempts to open [url]; records the outcome in history and returns success. */
     fun fire(context: Context, url: String): Boolean {
@@ -49,14 +73,31 @@ internal object DeepLinkTester {
 
     fun clearHistory() {
         _history.value = emptyList()
+        persist()
     }
 
     fun removeHistory(entry: DeepLinkHistoryEntry) {
         _history.value = _history.value - entry
+        persist()
     }
 
     private fun record(url: String, success: Boolean, error: String?) {
         val entry = DeepLinkHistoryEntry(url, System.currentTimeMillis(), success, error)
         _history.value = (listOf(entry) + _history.value).take(MAX_HISTORY)
+        persist()
+    }
+
+    private fun persist() {
+        val array = JSONArray()
+        _history.value.forEach { entry ->
+            array.put(
+                JSONObject()
+                    .put("url", entry.url)
+                    .put("ts", entry.timestamp)
+                    .put("ok", entry.success)
+                    .put("err", entry.error ?: ""),
+            )
+        }
+        Scizor.storeOrNull()?.putString(HISTORY_KEY, array.toString())
     }
 }

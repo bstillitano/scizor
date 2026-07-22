@@ -62,6 +62,9 @@ object Scizor {
     /** Host-registered Composables shown in the menu's Interface Previews screen. */
     var interfacePreviews: List<InterfacePreview> = emptyList()
 
+    /** One-tap deep link presets shown in the Deep Link Tester. */
+    var deepLinkPresets: List<com.scizor.feature.deeplink.DeepLinkPreset> = emptyList()
+
     /** HTTP traffic logger. Add [NetworkLogger.interceptor] to your OkHttpClient. */
     val network: NetworkLogger get() = NetworkLogger
 
@@ -87,6 +90,7 @@ object Scizor {
         store = ScizorStore(application).also { it.preload() }
         registerBuiltInFeatures()
         com.scizor.core.MenuPins.init()
+        com.scizor.feature.deeplink.DeepLinkTester.init()
         ConsoleLogger.start()
         CrashLogger.install(application)
         InterfaceToolkit.init(store)

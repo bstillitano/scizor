@@ -25,6 +25,8 @@ object Scizor {
 
     var interfacePreviews: List<com.scizor.feature.interfacepreviews.InterfacePreview> = emptyList()
 
+    var deepLinkPresets: List<com.scizor.feature.deeplink.DeepLinkPreset> = emptyList()
+
     val network: NetworkLogger get() = NetworkLogger
 
     val featureFlags: FeatureFlags get() = FeatureFlags
