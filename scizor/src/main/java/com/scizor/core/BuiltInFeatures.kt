@@ -7,7 +7,9 @@ import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material.icons.filled.Terminal
 import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.filled.Code
 import com.scizor.feature.console.ConsoleScreen
+import com.scizor.feature.custom.EnvironmentVariablesScreen
 import com.scizor.feature.deviceinfo.DeviceInfoScreen
 import com.scizor.feature.featureflags.FeatureFlagsScreen
 import com.scizor.feature.network.NetworkScreen
@@ -77,6 +79,16 @@ internal fun registerBuiltInFeatures() {
             icon = Icons.Filled.Terminal,
             section = "Diagnostics",
             screen = { ConsoleScreen() },
+        ),
+    )
+    FeatureRegistry.register(
+        ScizorMenuEntry(
+            id = "environment_variables",
+            title = "Environment Variables",
+            subtitle = "Host-provided key/value pairs",
+            icon = Icons.Filled.Code,
+            section = "Application",
+            screen = { EnvironmentVariablesScreen() },
         ),
     )
 }
