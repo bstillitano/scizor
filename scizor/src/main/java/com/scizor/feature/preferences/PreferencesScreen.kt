@@ -12,10 +12,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -24,8 +25,8 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
+import androidx.compose.material3.ListItemShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SegmentedListItem
@@ -47,6 +48,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.scizor.ui.ScizorNavigator
 import com.scizor.ui.SectionHeader
+import com.scizor.ui.SegmentInset
 import com.scizor.ui.SegmentedColumn
 import com.scizor.ui.scizorSegmentedColors
 
@@ -99,20 +101,25 @@ internal fun PreferencesScreen(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
         )
 
-        LazyColumn(modifier = Modifier.weight(1f)) {
+        LazyColumn(
+            modifier = Modifier.weight(1f).padding(horizontal = SegmentInset),
+            verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap),
+            contentPadding = PaddingValues(vertical = 12.dp),
+        ) {
             if (entries.isEmpty()) {
                 item {
                     Text(
                         if (state.entries.isEmpty()) "No entries in this file." else "No matching items.",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(horizontal = 28.dp, vertical = 12.dp),
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 12.dp),
                     )
                 }
             }
-            items(entries, key = { it.key }) { entry ->
+            itemsIndexed(entries, key = { _, it -> it.key }) { index, entry ->
                 PrefRow(
                     entry = entry,
+                    shapes = ListItemDefaults.segmentedShapes(index = index, count = entries.size),
                     onToggleBool = { viewModel.setBoolean(entry.key, it) },
                     onClickRow = {
                         when (entry.type) {
@@ -125,13 +132,12 @@ internal fun PreferencesScreen(
                     },
                     onDelete = { viewModel.remove(entry.key) },
                 )
-                HorizontalDivider()
             }
             if (query.isBlank()) {
                 item {
                     TextButton(
                         onClick = { confirmReset = true },
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                        modifier = Modifier.padding(vertical = 8.dp),
                     ) {
                         Text("Reset “${state.selectedFile}”", color = MaterialTheme.colorScheme.error)
                     }
@@ -179,6 +185,7 @@ private fun applyEdit(entry: PrefEntry, text: String, viewModel: PreferencesView
 @Composable
 private fun PrefRow(
     entry: PrefEntry,
+    shapes: ListItemShapes,
     onToggleBool: (Boolean) -> Unit,
     onClickRow: () -> Unit,
     onDelete: () -> Unit,
@@ -187,8 +194,9 @@ private fun PrefRow(
     var menu by remember { mutableStateOf(false) }
     val isBool = entry.type.equals("Boolean", true)
     Box {
-        ListItem(
-            headlineContent = { Text(entry.key) },
+        SegmentedListItem(
+            shapes = shapes,
+            colors = scizorSegmentedColors(),
             supportingContent = { Text("${entry.value}  ·  ${entry.type}") },
             trailingContent = {
                 if (isBool) {
@@ -199,6 +207,7 @@ private fun PrefRow(
                 onClick = { if (!isBool) onClickRow() },
                 onLongClick = { menu = true },
             ),
+            content = { Text(entry.key) },
         )
         DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
             DropdownMenuItem(text = { Text("Copy value") }, onClick = {

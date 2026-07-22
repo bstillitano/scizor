@@ -9,14 +9,16 @@ import android.content.Intent
 import android.graphics.BitmapFactory
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -32,9 +34,8 @@ import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.VideoFile
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Text
@@ -56,6 +57,7 @@ import com.scizor.feature.network.Json
 import com.scizor.feature.network.TextReaderScreen
 import com.scizor.ui.ScizorNavigator
 import com.scizor.ui.SectionHeader
+import com.scizor.ui.SegmentInset
 import com.scizor.ui.SegmentedColumn
 import com.scizor.ui.scizorSegmentedColors
 import java.io.File
@@ -66,19 +68,24 @@ import java.util.Date
 internal fun FileBrowserScreen(navigator: ScizorNavigator) {
     val context = LocalContext.current
     val roots = FileBrowser.roots(context)
-    LazyColumn(modifier = Modifier.fillMaxSize()) {
-        items(roots, key = { it.path }) { root ->
-            ListItem(
+    LazyColumn(
+        modifier = Modifier.fillMaxSize().padding(horizontal = SegmentInset),
+        verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap),
+        contentPadding = PaddingValues(vertical = 12.dp),
+    ) {
+        itemsIndexed(roots, key = { _, it -> it.path }) { index, root ->
+            SegmentedListItem(
+                shapes = ListItemDefaults.segmentedShapes(index = index, count = roots.size),
+                colors = scizorSegmentedColors(),
                 leadingContent = { Icon(Icons.Filled.Folder, null, tint = MaterialTheme.colorScheme.primary) },
-                headlineContent = { Text(root.label) },
                 supportingContent = { Text(root.path, style = MaterialTheme.typography.bodySmall) },
                 trailingContent = { Chevron() },
                 modifier = Modifier.combinedClickable(
                     onClick = { navigator.push(root.label) { DirectoryScreen(File(root.path), navigator) } },
                     onLongClick = {},
                 ),
+                content = { Text(root.label) },
             )
-            HorizontalDivider()
         }
     }
 }
@@ -91,13 +98,18 @@ private fun DirectoryScreen(dir: File, navigator: ScizorNavigator) {
         EmptyState("Empty folder")
         return
     }
-    LazyColumn(modifier = Modifier.fillMaxSize()) {
-        items(nodes, key = { it.path }) { node ->
+    LazyColumn(
+        modifier = Modifier.fillMaxSize().padding(horizontal = SegmentInset),
+        verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap),
+        contentPadding = PaddingValues(vertical = 12.dp),
+    ) {
+        itemsIndexed(nodes, key = { _, it -> it.path }) { index, node ->
             var menu by remember { mutableStateOf(false) }
             Box {
-                ListItem(
+                SegmentedListItem(
+                    shapes = ListItemDefaults.segmentedShapes(index = index, count = nodes.size),
+                    colors = scizorSegmentedColors(),
                     leadingContent = { Icon(iconFor(node.kind), null, tint = iconTint(node)) },
-                    headlineContent = { Text(node.name) },
                     supportingContent = {
                         val sizePart = FileBrowser.humanSize(node.size)
                         Text("$sizePart  ·  ${formatDate(node.lastModified)}", style = MaterialTheme.typography.bodySmall)
@@ -113,6 +125,7 @@ private fun DirectoryScreen(dir: File, navigator: ScizorNavigator) {
                         },
                         onLongClick = { menu = true },
                     ),
+                    content = { Text(node.name) },
                 )
                 DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
                     DropdownMenuItem(text = { Text("Delete") }, onClick = {
@@ -120,7 +133,6 @@ private fun DirectoryScreen(dir: File, navigator: ScizorNavigator) {
                     })
                 }
             }
-            HorizontalDivider()
         }
     }
 }

@@ -1,19 +1,25 @@
-@file:OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+@file:OptIn(
+    androidx.compose.foundation.ExperimentalFoundationApi::class,
+    androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class,
+)
 
 package com.scizor.feature.network
 
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
+import androidx.compose.material3.ListItemShapes
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -24,6 +30,8 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.scizor.ui.ScizorNavigator
+import com.scizor.ui.SegmentInset
+import com.scizor.ui.scizorSegmentedColors
 import org.json.JSONArray
 import org.json.JSONObject
 import org.json.JSONTokener
@@ -44,10 +52,13 @@ internal fun JsonBrowserScreen(json: String, navigator: ScizorNavigator) {
         return
     }
 
-    LazyColumn(modifier = Modifier.fillMaxSize()) {
-        itemsIndexed(rows) { _, row ->
-            JsonRowItem(row, navigator)
-            HorizontalDivider()
+    LazyColumn(
+        modifier = Modifier.fillMaxSize().padding(horizontal = SegmentInset),
+        verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap),
+        contentPadding = PaddingValues(vertical = 12.dp),
+    ) {
+        itemsIndexed(rows) { index, row ->
+            JsonRowItem(row, ListItemDefaults.segmentedShapes(index = index, count = rows.size), navigator)
         }
     }
 }
@@ -59,27 +70,32 @@ private fun rowsFor(value: Any?): List<JsonRow>? = when (value) {
 }
 
 @Composable
-private fun JsonRowItem(row: JsonRow, navigator: ScizorNavigator) {
+private fun JsonRowItem(row: JsonRow, shapes: ListItemShapes, navigator: ScizorNavigator) {
     val clipboard = LocalClipboardManager.current
     when (val v = row.value) {
-        is JSONObject -> ListItem(
-            headlineContent = { Text(row.label) },
+        is JSONObject -> SegmentedListItem(
+            shapes = shapes,
+            colors = scizorSegmentedColors(),
             supportingContent = { Text("{ ${v.length()} }") },
             trailingContent = { Chevron() },
             modifier = Modifier.combinedClickable(onClick = {
                 navigator.push(row.label) { JsonBrowserScreen(v.toString(), navigator) }
             }, onLongClick = {}),
+            content = { Text(row.label) },
         )
-        is JSONArray -> ListItem(
-            headlineContent = { Text(row.label) },
+        is JSONArray -> SegmentedListItem(
+            shapes = shapes,
+            colors = scizorSegmentedColors(),
             supportingContent = { Text("[ ${v.length()} ]") },
             trailingContent = { Chevron() },
             modifier = Modifier.combinedClickable(onClick = {
                 navigator.push(row.label) { JsonBrowserScreen(v.toString(), navigator) }
             }, onLongClick = {}),
+            content = { Text(row.label) },
         )
-        else -> ListItem(
-            headlineContent = { Text(row.label) },
+        else -> SegmentedListItem(
+            shapes = shapes,
+            colors = scizorSegmentedColors(),
             supportingContent = {
                 Text(v?.toString() ?: "null", maxLines = 3, overflow = TextOverflow.Ellipsis)
             },
@@ -87,6 +103,7 @@ private fun JsonRowItem(row: JsonRow, navigator: ScizorNavigator) {
                 onClick = {},
                 onLongClick = { clipboard.setText(AnnotatedString("${row.label}: ${v?.toString() ?: "null"}")) },
             ),
+            content = { Text(row.label) },
         )
     }
 }

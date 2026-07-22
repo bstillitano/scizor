@@ -10,17 +10,18 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SegmentedListItem
@@ -41,6 +42,7 @@ import androidx.compose.ui.unit.dp
 import com.scizor.feature.network.TextReaderScreen
 import com.scizor.ui.ScizorNavigator
 import com.scizor.ui.SectionHeader
+import com.scizor.ui.SegmentInset
 import com.scizor.ui.SegmentedColumn
 import com.scizor.ui.scizorSegmentedColors
 import java.text.DateFormat
@@ -96,18 +98,23 @@ internal fun CrashLogsScreen(navigator: ScizorNavigator) {
             return
         }
 
-        LazyColumn(modifier = Modifier.fillMaxSize()) {
-            items(filtered, key = { it.id }) { crash ->
-                ListItem(
+        LazyColumn(
+            modifier = Modifier.fillMaxSize().padding(horizontal = SegmentInset),
+            verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap),
+            contentPadding = PaddingValues(vertical = 12.dp),
+        ) {
+            itemsIndexed(filtered, key = { _, it -> it.id }) { index, crash ->
+                SegmentedListItem(
+                    shapes = ListItemDefaults.segmentedShapes(index = index, count = filtered.size),
+                    colors = scizorSegmentedColors(),
                     overlineContent = { Text("${formatDate(crash.timestamp)}  ·  ${crash.appVersion}") },
-                    headlineContent = { Text(crash.type.substringAfterLast('.')) },
                     supportingContent = { if (crash.message.isNotBlank()) Text(crash.message, maxLines = 2) },
                     trailingContent = { Chevron() },
                     modifier = Modifier.clickable {
                         navigator.push("Crash Details") { CrashDetailScreen(crash, navigator) }
                     },
+                    content = { Text(crash.type.substringAfterLast('.')) },
                 )
-                HorizontalDivider()
             }
         }
     }
