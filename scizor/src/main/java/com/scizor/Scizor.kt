@@ -10,6 +10,8 @@ import com.scizor.core.registerBuiltInFeatures
 import com.scizor.feature.console.ConsoleLogger
 import com.scizor.feature.crashlogs.CrashLogger
 import com.scizor.feature.custom.DeveloperOption
+import com.scizor.feature.interfacetools.InterfaceToolkit
+import com.scizor.feature.interfacetools.OverlayController
 import com.scizor.feature.featureflags.FeatureFlags
 import com.scizor.feature.network.NetworkLogger
 import com.scizor.feature.preferences.PreferencesBrowser
@@ -81,6 +83,8 @@ object Scizor {
         registerBuiltInFeatures()
         ConsoleLogger.start()
         CrashLogger.install(application)
+        InterfaceToolkit.init(store)
+        OverlayController.install(application)
         applyInvocationGesture(application)
     }
 

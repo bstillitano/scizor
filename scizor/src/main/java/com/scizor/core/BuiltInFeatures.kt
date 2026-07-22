@@ -7,6 +7,7 @@ import androidx.compose.material.icons.filled.CompareArrows
 import androidx.compose.material.icons.filled.Cookie
 import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.Flag
+import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Link
@@ -23,6 +24,7 @@ import com.scizor.feature.databasebrowser.DatabaseBrowserScreen
 import com.scizor.feature.deeplink.DeepLinkTesterScreen
 import com.scizor.feature.featureflags.FeatureFlagsScreen
 import com.scizor.feature.filebrowser.FileBrowserScreen
+import com.scizor.feature.interfacetools.UiToolsScreen
 import com.scizor.feature.keystore.KeystoreScreen
 import com.scizor.feature.location.LocationSpooferScreen
 import com.scizor.feature.network.NetworkScreen
@@ -183,6 +185,18 @@ internal fun registerBuiltInFeatures() {
             icon = Icons.Filled.Notifications,
             section = "Notifications",
             screen = { NotificationTesterScreen() },
+        ),
+    )
+
+    // UI/UX
+    FeatureRegistry.register(
+        ScizorMenuEntry(
+            id = "ui_tools",
+            title = "Interface Tools",
+            subtitle = "Grid, view bounds, touches, FPS",
+            icon = Icons.Filled.Dashboard,
+            section = "UI/UX",
+            screen = { UiToolsScreen() },
         ),
     )
 }
