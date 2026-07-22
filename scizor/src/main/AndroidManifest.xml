@@ -10,6 +10,7 @@
         <activity
             android:name="com.scizor.core.ScizorActivity"
             android:exported="false"
+            android:configChanges="uiMode|orientation|screenSize|smallestScreenSize|screenLayout|keyboardHidden|density|fontScale"
             android:theme="@style/Theme.Scizor" />
 
         <service
