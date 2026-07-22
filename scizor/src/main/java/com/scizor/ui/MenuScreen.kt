@@ -129,6 +129,9 @@ private fun InfoSegment(row: MenuRow.Info, shapes: androidx.compose.material3.Li
         colors = ListItemDefaults.segmentedColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
         ),
+        leadingContent = row.icon?.let { icon ->
+            { Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) }
+        },
         trailingContent = {
             if (row.value == LOADING_PLACEHOLDER) {
                 CircularProgressIndicator(

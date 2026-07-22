@@ -25,6 +25,7 @@ internal sealed interface MenuRow {
         override val id: String,
         val label: String,
         val value: String,
+        val icon: ImageVector? = null,
     ) : MenuRow
 
     /** A navigable feature or a runnable developer option. */

@@ -4,6 +4,13 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -19,8 +26,12 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import com.scizor.ui.MenuScreen
 import com.scizor.ui.ScizorNavigator
@@ -89,12 +100,35 @@ private fun ScizorHost(onClose: () -> Unit) {
                 .fillMaxSize()
                 .padding(padding),
         ) {
-            val destination = navigator.current
-            if (destination == null) {
-                MenuScreen(navigator = navigator)
-            } else {
-                destination.content()
+            val stateHolder = rememberSaveableStateHolder()
+            val depth = navigator.stack.size
+            var previousDepth by remember { mutableIntStateOf(depth) }
+            val forward = depth >= previousDepth
+            SideEffect { previousDepth = depth }
+
+            AnimatedContent(
+                targetState = navigator.current,
+                transitionSpec = {
+                    val enter = slideInHorizontally(tween(280)) { full -> if (forward) full else -full } +
+                        fadeIn(tween(280))
+                    val exit = slideOutHorizontally(tween(280)) { full -> if (forward) -full else full } +
+                        fadeOut(tween(280))
+                    enter togetherWith exit
+                },
+                label = "scizor-nav",
+            ) { destination ->
+                // Key by stable id (root = -1) so each screen's scroll/UI state is
+                // retained across push/pop instead of resetting to the top.
+                stateHolder.SaveableStateProvider(destination?.id ?: ROOT_STATE_KEY) {
+                    if (destination == null) {
+                        MenuScreen(navigator = navigator)
+                    } else {
+                        destination.content()
+                    }
+                }
             }
         }
     }
 }
+
+private const val ROOT_STATE_KEY = -1

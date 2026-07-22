@@ -4,6 +4,8 @@ import android.content.Context
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Extension
 import androidx.compose.material.icons.filled.CheckBoxOutlineBlank
+import androidx.compose.material.icons.filled.LocalFireDepartment
+import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.Straighten
 import androidx.compose.material.icons.filled.Slideshow
 import androidx.lifecycle.ViewModel
@@ -65,10 +67,14 @@ internal class MenuViewModel : ViewModel() {
                 val rows = mutableListOf<MenuRow>()
                 // Scyther shows the device's public IP inline atop the Networking section.
                 if (section == "Networking") {
-                    rows += MenuRow.Info("ip_address", "IP Address", ipAddress ?: LOADING_PLACEHOLDER)
+                    rows += MenuRow.Info(
+                        "ip_address", "IP Address", ipAddress ?: LOADING_PLACEHOLDER, Icons.Filled.Public,
+                    )
                 }
                 if (section == "Notifications") {
-                    Scizor.fcmToken?.let { rows += MenuRow.Info("fcm_token", "FCM Token", it) }
+                    Scizor.fcmToken?.let {
+                        rows += MenuRow.Info("fcm_token", "FCM Token", it, Icons.Filled.LocalFireDepartment)
+                    }
                 }
                 if (section == "UI/UX") {
                     rows += MenuRow.Toggle(
