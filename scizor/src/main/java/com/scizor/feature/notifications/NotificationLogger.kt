@@ -13,6 +13,14 @@ internal data class LoggedNotification(
     val title: String,
     val text: String,
     val time: Long,
+    val subText: String? = null,
+    val channelId: String? = null,
+    val category: String? = null,
+    val priority: String? = null,
+    val group: String? = null,
+    val ongoing: Boolean = false,
+    val actions: List<String> = emptyList(),
+    val extras: List<Pair<String, String>> = emptyList(),
 )
 
 /**
@@ -28,10 +36,11 @@ internal object NotificationLogger {
 
     private var counter = 0L
 
-    fun record(packageName: String, title: String, text: String, time: Long) {
-        val entry = LoggedNotification(counter++, packageName, title, text, time)
-        _items.value = (listOf(entry) + _items.value).take(MAX)
+    fun record(notification: LoggedNotification) {
+        _items.value = (listOf(notification.copy(id = counter++)) + _items.value).take(MAX)
     }
+
+    fun byId(id: Long): LoggedNotification? = _items.value.firstOrNull { it.id == id }
 
     fun clear() {
         _items.value = emptyList()

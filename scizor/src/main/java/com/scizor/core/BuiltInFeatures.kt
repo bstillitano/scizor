@@ -192,7 +192,7 @@ internal fun registerBuiltInFeatures() {
             subtitle = "Log posted notifications",
             icon = Icons.Filled.ListAlt,
             section = "Notifications",
-            screen = { NotificationLoggerScreen() },
+            screen = { NotificationLoggerScreen(it) },
         ),
     )
     FeatureRegistry.register(
