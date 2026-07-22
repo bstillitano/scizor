@@ -59,11 +59,21 @@ object DeviceInfo {
 
         runCatching {
             val debuggable = (context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
-            rows += InfoRow("Type", if (debuggable) "Debug" else "Release")
+            val base = if (debuggable) "Debug" else "Release"
+            rows += InfoRow("Type", if (isEmulator()) "$base · Emulator" else base)
         }
 
         return rows
     }
+
+    private fun isEmulator(): Boolean =
+        Build.FINGERPRINT.startsWith("generic") ||
+            Build.FINGERPRINT.contains("emulator") ||
+            Build.MODEL.contains("google_sdk") ||
+            Build.MODEL.contains("Emulator") ||
+            Build.MODEL.contains("sdk_gphone") ||
+            Build.MANUFACTURER.contains("Genymotion") ||
+            Build.PRODUCT.contains("sdk")
 
     @Suppress("DEPRECATION")
     private fun versionCode(info: android.content.pm.PackageInfo): Long {

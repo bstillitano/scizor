@@ -16,7 +16,7 @@ import com.scizor.feature.network.IpAddress
  */
 internal class MenuViewModel : ViewModel() {
 
-    fun groups(context: Context, ipAddress: String?): List<MenuGroupUi> {
+    fun groups(context: Context, ipAddress: String?, pins: List<String>): List<MenuGroupUi> {
         val groups = mutableListOf<MenuGroupUi>()
 
         val facts = DeviceInfo.collect(context)
@@ -33,6 +33,25 @@ internal class MenuViewModel : ViewModel() {
             groups += MenuGroupUi(
                 title = "Application",
                 rows = application.map { MenuRow.Info("app_${it.label}", it.label, it.value) },
+            )
+        }
+
+        // Pinned entries, oldest-first, filtered to still-registered ids.
+        val registry = FeatureRegistry.all().associateBy { it.id }
+        val pinned = pins.mapNotNull { registry[it] }
+        if (pinned.isNotEmpty()) {
+            groups += MenuGroupUi(
+                title = "Pinned",
+                rows = pinned.map { entry ->
+                    MenuRow.Action(
+                        id = "pinned_${entry.id}",
+                        title = entry.title,
+                        subtitle = entry.subtitle,
+                        icon = entry.icon,
+                        action = MenuAction.Open(entry.title, entry.screen),
+                        pinnableId = entry.id,
+                    )
+                },
             )
         }
 
@@ -54,6 +73,7 @@ internal class MenuViewModel : ViewModel() {
                         subtitle = entry.subtitle,
                         icon = entry.icon,
                         action = MenuAction.Open(entry.title, entry.screen),
+                        pinnableId = entry.id,
                     )
                 }
                 groups += MenuGroupUi(title = section, rows = rows)
@@ -64,13 +84,27 @@ internal class MenuViewModel : ViewModel() {
             groups += MenuGroupUi(
                 title = "Developer",
                 rows = developerOptions.map { option ->
-                    MenuRow.Action(
-                        id = "developer_option_${option.title}",
-                        title = option.title,
-                        subtitle = null,
-                        icon = option.icon ?: Icons.Filled.Extension,
-                        action = MenuAction.Run(option.onClick),
-                    )
+                    val id = "developer_option_${option.title}"
+                    when {
+                        option.value != null ->
+                            MenuRow.Info(id, option.title, option.value!!)
+                        option.screen != null ->
+                            MenuRow.Action(
+                                id = id,
+                                title = option.title,
+                                subtitle = null,
+                                icon = option.icon ?: Icons.Filled.Extension,
+                                action = MenuAction.Open(option.title) { option.screen!!.invoke() },
+                            )
+                        else ->
+                            MenuRow.Action(
+                                id = id,
+                                title = option.title,
+                                subtitle = null,
+                                icon = option.icon ?: Icons.Filled.Extension,
+                                action = MenuAction.Run(option.onClick),
+                            )
+                    }
                 },
             )
         }

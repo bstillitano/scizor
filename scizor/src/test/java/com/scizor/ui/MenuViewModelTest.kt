@@ -20,7 +20,7 @@ class MenuViewModelTest {
     @Test
     fun `device and application facts are rendered inline`() {
         val context = RuntimeEnvironment.getApplication()
-        val groups = MenuViewModel().groups(context, null)
+        val groups = MenuViewModel().groups(context, null, emptyList())
 
         val device = groups.first { it.title == "Device" }
         assertTrue(device.rows.filterIsInstance<MenuRow.Info>().any { it.label == "Model" })
@@ -32,7 +32,7 @@ class MenuViewModelTest {
     @Test
     fun `feature screens are grouped into sections`() {
         val context = RuntimeEnvironment.getApplication()
-        val titles = MenuViewModel().groups(context, null)
+        val titles = MenuViewModel().groups(context, null, emptyList())
             .flatMap { it.rows }
             .filterIsInstance<MenuRow.Action>()
             .map { it.title }
@@ -49,7 +49,7 @@ class MenuViewModelTest {
             DeveloperOption(title = "Reset onboarding") {},
         )
 
-        val groups = MenuViewModel().groups(context, null)
+        val groups = MenuViewModel().groups(context, null, emptyList())
         val developer = groups.first { it.title == "Developer" }
         assertTrue(
             developer.rows.filterIsInstance<MenuRow.Action>().any { it.title == "Reset onboarding" },

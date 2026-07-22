@@ -86,6 +86,7 @@ object Scizor {
         this.application = application
         store = ScizorStore(application).also { it.preload() }
         registerBuiltInFeatures()
+        com.scizor.core.MenuPins.init()
         ConsoleLogger.start()
         CrashLogger.install(application)
         InterfaceToolkit.init(store)

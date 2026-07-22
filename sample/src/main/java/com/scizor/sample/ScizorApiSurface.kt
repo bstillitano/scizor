@@ -37,7 +37,11 @@ internal fun scizorApiSurface(application: Application) {
     Scizor.invocationGesture = ScizorGesture.SHAKE
     Scizor.invocationGesture = ScizorGesture.FLOATING_BUTTON
     Scizor.invocationGesture = ScizorGesture.NONE
-    Scizor.developerOptions = listOf(DeveloperOption(title = "x", icon = null) {})
+    Scizor.developerOptions = listOf(
+        DeveloperOption(title = "x", icon = null) {},
+        DeveloperOption(title = "v", value = "1"),
+        DeveloperOption(title = "s", screen = {}),
+    )
     Scizor.environmentVariables = mapOf("k" to "v")
     Scizor.fcmToken = "token"
     Scizor.interfacePreviews = listOf(

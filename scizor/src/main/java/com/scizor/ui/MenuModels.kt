@@ -33,6 +33,8 @@ internal sealed interface MenuRow {
         val subtitle: String?,
         val icon: ImageVector,
         val action: MenuAction,
+        /** The registry id this row can be pinned/unpinned by, or null if not pinnable. */
+        val pinnableId: String? = null,
     ) : MenuRow
 }
 
