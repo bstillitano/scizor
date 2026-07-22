@@ -1,11 +1,19 @@
-@file:OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
+@file:OptIn(
+    androidx.compose.foundation.ExperimentalFoundationApi::class,
+    androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class,
+)
 
 package com.scizor.feature.filebrowser
 
-import androidx.compose.foundation.clickable
+import android.content.Intent
+import android.graphics.BitmapFactory
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -14,7 +22,16 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.AudioFile
+import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.FolderZip
+import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.PictureAsPdf
+import androidx.compose.material.icons.filled.Storage
+import androidx.compose.material.icons.filled.VideoFile
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
@@ -22,10 +39,20 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
+import com.scizor.feature.network.Json
 import com.scizor.feature.network.TextReaderScreen
 import com.scizor.ui.ScizorNavigator
 import com.scizor.ui.SectionHeader
@@ -39,7 +66,6 @@ import java.util.Date
 internal fun FileBrowserScreen(navigator: ScizorNavigator) {
     val context = LocalContext.current
     val roots = FileBrowser.roots(context)
-
     LazyColumn(modifier = Modifier.fillMaxSize()) {
         items(roots, key = { it.path }) { root ->
             ListItem(
@@ -47,9 +73,10 @@ internal fun FileBrowserScreen(navigator: ScizorNavigator) {
                 headlineContent = { Text(root.label) },
                 supportingContent = { Text(root.path, style = MaterialTheme.typography.bodySmall) },
                 trailingContent = { Chevron() },
-                modifier = Modifier.clickable {
-                    navigator.push(root.label) { DirectoryScreen(File(root.path), navigator) }
-                },
+                modifier = Modifier.combinedClickable(
+                    onClick = { navigator.push(root.label) { DirectoryScreen(File(root.path), navigator) } },
+                    onLongClick = {},
+                ),
             )
             HorizontalDivider()
         }
@@ -58,70 +85,121 @@ internal fun FileBrowserScreen(navigator: ScizorNavigator) {
 
 @Composable
 private fun DirectoryScreen(dir: File, navigator: ScizorNavigator) {
-    val nodes = FileBrowser.list(dir)
+    var refresh by remember { mutableIntStateOf(0) }
+    val nodes = remember(refresh) { FileBrowser.list(dir) }
     if (nodes.isEmpty()) {
         EmptyState("Empty folder")
         return
     }
     LazyColumn(modifier = Modifier.fillMaxSize()) {
         items(nodes, key = { it.path }) { node ->
-            ListItem(
-                leadingContent = {
-                    Icon(
-                        imageVector = if (node.isDirectory) Icons.Filled.Folder else Icons.AutoMirrored.Filled.InsertDriveFile,
-                        contentDescription = null,
-                        tint = if (node.isDirectory) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                },
-                headlineContent = { Text(node.name) },
-                supportingContent = {
-                    val sizePart = if (node.isDirectory) "folder" else FileBrowser.humanSize(node.size)
-                    Text("$sizePart  ·  ${formatDate(node.lastModified)}", style = MaterialTheme.typography.bodySmall)
-                },
-                trailingContent = { Chevron() },
-                modifier = Modifier.clickable {
-                    if (node.isDirectory) {
-                        navigator.push(node.name) { DirectoryScreen(node.file, navigator) }
-                    } else {
-                        navigator.push(node.name) { FileDetailScreen(node, navigator) }
-                    }
-                },
-            )
+            var menu by remember { mutableStateOf(false) }
+            Box {
+                ListItem(
+                    leadingContent = { Icon(iconFor(node.kind), null, tint = iconTint(node)) },
+                    headlineContent = { Text(node.name) },
+                    supportingContent = {
+                        val sizePart = FileBrowser.humanSize(node.size)
+                        Text("$sizePart  ·  ${formatDate(node.lastModified)}", style = MaterialTheme.typography.bodySmall)
+                    },
+                    trailingContent = { Chevron() },
+                    modifier = Modifier.combinedClickable(
+                        onClick = {
+                            if (node.isDirectory) {
+                                navigator.push(node.name) { DirectoryScreen(node.file, navigator) }
+                            } else {
+                                navigator.push(node.name) { FileDetailScreen(node, navigator) { refresh++ } }
+                            }
+                        },
+                        onLongClick = { menu = true },
+                    ),
+                )
+                DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
+                    DropdownMenuItem(text = { Text("Delete") }, onClick = {
+                        FileBrowser.delete(node.file); menu = false; refresh++
+                    })
+                }
+            }
             HorizontalDivider()
         }
     }
 }
 
 @Composable
-private fun FileDetailScreen(node: FileNode, navigator: ScizorNavigator) {
+private fun FileDetailScreen(node: FileNode, navigator: ScizorNavigator, onChanged: () -> Unit) {
+    val context = LocalContext.current
+    val clipboard = LocalClipboardManager.current
     val info = listOf(
         "Path" to node.path,
         "Name" to node.name,
         "Size" to FileBrowser.humanSize(node.size),
-        "Type" to if (node.isDirectory) "Directory" else "File",
+        "Type" to node.kind.name.lowercase().replaceFirstChar { it.uppercase() },
         "Modified" to formatDate(node.lastModified),
+        "Permissions" to FileBrowser.permissions(node.file),
     )
-    val content = FileBrowser.readText(node.file)
+    val rawContent = remember(node.path) { FileBrowser.readText(node.file) }
+    val content = remember(rawContent) {
+        if (node.kind == FileKind.JSON && rawContent != null) Json.pretty(rawContent) else rawContent
+    }
+    val image = remember(node.path) {
+        if (node.kind == FileKind.IMAGE) {
+            runCatching { BitmapFactory.decodeFile(node.path)?.asImageBitmap() }.getOrNull()
+        } else {
+            null
+        }
+    }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState()),
-    ) {
+    Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
         SectionHeader("Information")
         SegmentedColumn(items = info) { (label, value), shapes ->
             SegmentedListItem(
                 shapes = shapes,
                 colors = scizorSegmentedColors(),
                 supportingContent = { Text(value, style = MaterialTheme.typography.bodySmall) },
+                modifier = Modifier.combinedClickable(
+                    onClick = {},
+                    onLongClick = { clipboard.setText(AnnotatedString("$label: $value")) },
+                ),
                 content = { Text(label) },
+            )
+        }
+
+        SectionHeader("Actions")
+        val actions = buildList {
+            add("Copy path")
+            if (node.file.canRead()) add("Share")
+            add("Delete")
+        }
+        SegmentedColumn(items = actions) { action, shapes ->
+            SegmentedListItem(
+                onClick = {
+                    when (action) {
+                        "Copy path" -> clipboard.setText(AnnotatedString(node.path))
+                        "Share" -> shareFile(context, node.file)
+                        "Delete" -> { FileBrowser.delete(node.file); onChanged(); navigator.pop() }
+                    }
+                },
+                shapes = shapes,
+                colors = scizorSegmentedColors(),
+                content = {
+                    Text(action, color = if (action == "Delete") MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary)
+                },
+            )
+        }
+
+        if (image != null) {
+            SectionHeader("Preview")
+            Image(
+                bitmap = image,
+                contentDescription = null,
+                modifier = Modifier.fillMaxWidth().heightIn(max = 300.dp).padding(16.dp),
             )
         }
 
         SectionHeader("Content")
         if (content == null) {
             Text(
-                "Not a viewable text file, or too large to display.",
+                "Not a viewable text file.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 28.dp, vertical = 8.dp),
@@ -141,13 +219,25 @@ private fun FileDetailScreen(node: FileNode, navigator: ScizorNavigator) {
     }
 }
 
+private fun iconFor(kind: FileKind): ImageVector = when (kind) {
+    FileKind.DIRECTORY -> Icons.Filled.Folder
+    FileKind.IMAGE -> Icons.Filled.Image
+    FileKind.TEXT, FileKind.JSON -> Icons.Filled.Description
+    FileKind.DATABASE -> Icons.Filled.Storage
+    FileKind.ARCHIVE -> Icons.Filled.FolderZip
+    FileKind.AUDIO -> Icons.Filled.AudioFile
+    FileKind.VIDEO -> Icons.Filled.VideoFile
+    FileKind.PDF -> Icons.Filled.PictureAsPdf
+    FileKind.BINARY -> Icons.AutoMirrored.Filled.InsertDriveFile
+}
+
+@Composable
+private fun iconTint(node: FileNode) =
+    if (node.isDirectory) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+
 @Composable
 private fun Chevron() {
-    Icon(
-        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-        contentDescription = null,
-        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-    )
+    Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
 }
 
 @Composable
@@ -159,3 +249,15 @@ private fun EmptyState(text: String) {
 
 private fun formatDate(millis: Long): String =
     DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT).format(Date(millis))
+
+private fun shareFile(context: android.content.Context, file: File) {
+    // Share the text content (avoids needing a FileProvider for arbitrary files).
+    runCatching {
+        val text = FileBrowser.readText(file) ?: file.absolutePath
+        val intent = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_TEXT, text)
+        }
+        context.startActivity(Intent.createChooser(intent, "Share").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+    }
+}

@@ -126,7 +126,7 @@ internal fun registerBuiltInFeatures() {
             subtitle = "Cookies seen in captured traffic",
             icon = Icons.Filled.Cookie,
             section = "Data",
-            screen = { CookiesScreen() },
+            screen = { CookiesScreen(it) },
         ),
     )
 
@@ -138,7 +138,7 @@ internal fun registerBuiltInFeatures() {
             subtitle = "AndroidKeyStore aliases",
             icon = Icons.Filled.Key,
             section = "Security",
-            screen = { KeystoreScreen() },
+            screen = { KeystoreScreen(it) },
         ),
     )
 
