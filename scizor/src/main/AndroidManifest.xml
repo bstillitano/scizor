@@ -6,6 +6,16 @@
             android:name="com.scizor.core.ScizorActivity"
             android:exported="false"
             android:theme="@style/Theme.Scizor" />
+
+        <service
+            android:name="com.scizor.feature.notifications.ScizorNotificationListenerService"
+            android:exported="false"
+            android:label="Scizor Notification Logger"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
     </application>
 
 </manifest>

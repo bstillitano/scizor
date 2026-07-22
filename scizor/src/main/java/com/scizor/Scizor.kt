@@ -8,8 +8,10 @@ import com.scizor.core.ScizorStore
 import com.scizor.core.ShakeDetector
 import com.scizor.core.registerBuiltInFeatures
 import com.scizor.feature.console.ConsoleLogger
+import com.scizor.feature.appearance.AppearanceOverrides
 import com.scizor.feature.crashlogs.CrashLogger
 import com.scizor.feature.custom.DeveloperOption
+import com.scizor.feature.interfacepreviews.InterfacePreview
 import com.scizor.feature.interfacetools.InterfaceToolkit
 import com.scizor.feature.interfacetools.OverlayController
 import com.scizor.feature.featureflags.FeatureFlags
@@ -57,6 +59,9 @@ object Scizor {
     /** FCM registration token, if the host provides it — shown in Notifications. */
     var fcmToken: String? = null
 
+    /** Host-registered Composables shown in the menu's Interface Previews screen. */
+    var interfacePreviews: List<InterfacePreview> = emptyList()
+
     /** HTTP traffic logger. Add [NetworkLogger.interceptor] to your OkHttpClient. */
     val network: NetworkLogger get() = NetworkLogger
 
@@ -85,6 +90,7 @@ object Scizor {
         CrashLogger.install(application)
         InterfaceToolkit.init(store)
         OverlayController.install(application)
+        AppearanceOverrides.init(application, store)
         applyInvocationGesture(application)
     }
 

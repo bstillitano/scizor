@@ -23,6 +23,8 @@ object Scizor {
 
     var fcmToken: String? = null
 
+    var interfacePreviews: List<com.scizor.feature.interfacepreviews.InterfacePreview> = emptyList()
+
     val network: NetworkLogger get() = NetworkLogger
 
     val featureFlags: FeatureFlags get() = FeatureFlags

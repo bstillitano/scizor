@@ -41,6 +41,17 @@ class SampleApp : Application() {
 
         Scizor.fcmToken = "demo-fcm-token-a1b2c3d4e5f6g7h8i9j0"
 
+        Scizor.interfacePreviews = listOf(
+            com.scizor.feature.interfacepreviews.InterfacePreview("Primary button") {
+                androidx.compose.material3.Button(onClick = {}) {
+                    androidx.compose.material3.Text("Click me")
+                }
+            },
+            com.scizor.feature.interfacepreviews.InterfacePreview("Loading spinner") {
+                androidx.compose.material3.CircularProgressIndicator()
+            },
+        )
+
         Scizor.developerOptions = listOf(
             DeveloperOption(title = "Log a test message") {
                 Log.i("ScizorSample", "Test log from developer option")
