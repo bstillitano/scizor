@@ -119,7 +119,7 @@ private fun TouchSettingsScreen() {
     val log by InterfaceToolkit.touchLog.collectAsStateWithLifecycle()
     Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
         Column(modifier = Modifier.padding(16.dp)) {
-            SliderRow("Ripple radius", "$radius dp", radius.toFloat(), 8f..64f) {
+            SliderRow("Touch radius", "$radius dp", radius.toFloat(), 4f..48f) {
                 InterfaceToolkit.setTouchRadiusDp(it.toInt())
             }
             SliderRow("Fade duration", "$fade ms", fade.toFloat(), 200f..3000f) {

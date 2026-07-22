@@ -50,7 +50,7 @@ internal object InterfaceToolkit {
     val fpsAveraged: StateFlow<Boolean> = _fpsAveraged
 
     // Touch settings
-    private val _touchRadiusDp = MutableStateFlow(24)
+    private val _touchRadiusDp = MutableStateFlow(12)
     private val _touchFadeMs = MutableStateFlow(800)
     private val _touchLogging = MutableStateFlow(false)
     val touchRadiusDp: StateFlow<Int> = _touchRadiusDp
@@ -77,7 +77,7 @@ internal object InterfaceToolkit {
         _fpsWarn.value = int("ui_fps_warn", 45)
         _fpsCritical.value = int("ui_fps_critical", 30)
         _fpsAveraged.value = store.boolean("ui_fps_avg", true)
-        _touchRadiusDp.value = int("ui_touch_radius", 24)
+        _touchRadiusDp.value = int("ui_touch_radius", 12)
         _touchFadeMs.value = int("ui_touch_fade", 800)
         _touchLogging.value = store.boolean("ui_touch_log", false)
         applySlowAnimations(_slowAnimations.value)
@@ -103,7 +103,7 @@ internal object InterfaceToolkit {
     fun setFpsWarn(value: Int) = updateInt(_fpsWarn, "ui_fps_warn", value.coerceIn(1, 120))
     fun setFpsCritical(value: Int) = updateInt(_fpsCritical, "ui_fps_critical", value.coerceIn(1, 120))
     fun setFpsAveraged(value: Boolean) = update(_fpsAveraged, "ui_fps_avg", value)
-    fun setTouchRadiusDp(value: Int) = updateInt(_touchRadiusDp, "ui_touch_radius", value.coerceIn(8, 64))
+    fun setTouchRadiusDp(value: Int) = updateInt(_touchRadiusDp, "ui_touch_radius", value.coerceIn(4, 48))
     fun setTouchFadeMs(value: Int) = updateInt(_touchFadeMs, "ui_touch_fade", value.coerceIn(200, 3000))
     fun setTouchLogging(value: Boolean) = update(_touchLogging, "ui_touch_log", value)
 

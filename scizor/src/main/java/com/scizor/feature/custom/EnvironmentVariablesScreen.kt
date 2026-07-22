@@ -21,15 +21,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.scizor.ui.CopyMenuHost
+import com.scizor.ui.rememberSearchQuery
 import com.scizor.ui.SectionHeader
 import com.scizor.ui.SegmentedColumn
 import com.scizor.ui.scizorSegmentedColors
 
 @Composable
 internal fun EnvironmentVariablesScreen(viewModel: EnvironmentVariablesViewModel = viewModel()) {
-    val variables = viewModel.variables()
+    val all = viewModel.variables()
+    val query = rememberSearchQuery("Search variables")
 
-    if (variables.isEmpty()) {
+    if (all.isEmpty()) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text(
                 "No environment variables configured.\nAssign Scizor.environmentVariables in your app.",
@@ -39,6 +41,10 @@ internal fun EnvironmentVariablesScreen(viewModel: EnvironmentVariablesViewModel
             )
         }
         return
+    }
+
+    val variables = all.filter { (k, v) ->
+        query.isBlank() || k.contains(query, true) || v.contains(query, true)
     }
 
     Column(

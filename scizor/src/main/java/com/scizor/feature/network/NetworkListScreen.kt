@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.scizor.ui.rememberSearchQuery
+import com.scizor.ui.rememberTopBarAction
 import com.scizor.ui.ScizorNavigator
 
 /** Entry point: the transaction list; tapping a row pushes the detail page. */
@@ -62,6 +63,9 @@ private fun NetworkList(
     onClear: () -> Unit,
 ) {
     val query = rememberSearchQuery("Search URL, method or status")
+    if (transactions.isNotEmpty()) {
+        rememberTopBarAction(Icons.Filled.Delete, "Clear all", onClear)
+    }
     val filtered = transactions.filter {
         query.isBlank() ||
             it.url.contains(query, ignoreCase = true) ||
@@ -71,15 +75,6 @@ private fun NetworkList(
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
-            horizontalArrangement = Arrangement.End,
-        ) {
-            IconButton(onClick = onClear) {
-                Icon(Icons.Filled.Delete, contentDescription = "Clear all")
-            }
-        }
-
         if (filtered.isEmpty()) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text(

@@ -55,6 +55,7 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import com.scizor.feature.network.Json
 import com.scizor.feature.network.TextReaderScreen
+import com.scizor.ui.rememberSearchQuery
 import com.scizor.ui.ScizorNavigator
 import com.scizor.ui.SectionHeader
 import com.scizor.ui.SegmentInset
@@ -67,7 +68,10 @@ import java.util.Date
 @Composable
 internal fun FileBrowserScreen(navigator: ScizorNavigator) {
     val context = LocalContext.current
-    val roots = FileBrowser.roots(context)
+    val query = rememberSearchQuery("Search locations")
+    val roots = FileBrowser.roots(context).filter {
+        query.isBlank() || it.label.contains(query, true) || it.path.contains(query, true)
+    }
     LazyColumn(
         modifier = Modifier.fillMaxSize().padding(horizontal = SegmentInset),
         verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap),
@@ -93,9 +97,11 @@ internal fun FileBrowserScreen(navigator: ScizorNavigator) {
 @Composable
 private fun DirectoryScreen(dir: File, navigator: ScizorNavigator) {
     var refresh by remember { mutableIntStateOf(0) }
-    val nodes = remember(refresh) { FileBrowser.list(dir) }
+    val query = rememberSearchQuery("Search this folder")
+    val all = remember(refresh) { FileBrowser.list(dir) }
+    val nodes = all.filter { query.isBlank() || it.name.contains(query, true) }
     if (nodes.isEmpty()) {
-        EmptyState("Empty folder")
+        EmptyState(if (all.isEmpty()) "Empty folder" else "No files match.")
         return
     }
     LazyColumn(

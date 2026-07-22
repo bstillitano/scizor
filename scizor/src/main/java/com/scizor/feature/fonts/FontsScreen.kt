@@ -1,13 +1,19 @@
+@file:OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
+
 package com.scizor.feature.fonts
 
 import android.graphics.Typeface
 import android.widget.TextView
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -18,10 +24,13 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.scizor.ui.SectionHeader
+import com.scizor.ui.SegmentInset
+import com.scizor.ui.rememberSearchQuery
+import com.scizor.ui.scizorSegmentedColors
 
 private sealed interface FontRow {
     data class Header(val title: String) : FontRow
-    data class Font(val info: FontInfo) : FontRow
+    data class Entry(val info: FontInfo, val indexInGroup: Int, val groupCount: Int) : FontRow
 }
 
 @Composable
@@ -30,16 +39,23 @@ internal fun FontsScreen() {
     val families = remember { FontsBrowser.families() }
     val appFonts = remember { FontsBrowser.appFonts(context) }
     val textColor = MaterialTheme.colorScheme.onSurface.toArgb()
+    val query = rememberSearchQuery("Search fonts")
 
-    val rows = remember(families, appFonts) {
+    val rows = remember(families, appFonts, query) {
         buildList {
-            if (appFonts.isNotEmpty()) {
-                add(FontRow.Header("App fonts (${appFonts.size})"))
-                appFonts.forEach { add(FontRow.Font(it)) }
+            val matchedApp = appFonts.filter { query.isBlank() || it.name.contains(query, true) }
+            if (matchedApp.isNotEmpty()) {
+                add(FontRow.Header("App fonts (${matchedApp.size})"))
+                matchedApp.forEachIndexed { i, f -> add(FontRow.Entry(f, i, matchedApp.size)) }
             }
             families.forEach { family ->
-                add(FontRow.Header("${family.name} (${family.fonts.size})"))
-                family.fonts.forEach { add(FontRow.Font(it)) }
+                val matched = family.fonts.filter {
+                    query.isBlank() || it.name.contains(query, true) || family.name.contains(query, true)
+                }
+                if (matched.isNotEmpty()) {
+                    add(FontRow.Header("${family.name} (${matched.size})"))
+                    matched.forEachIndexed { i, f -> add(FontRow.Entry(f, i, matched.size)) }
+                }
             }
         }
     }
@@ -47,7 +63,7 @@ internal fun FontsScreen() {
     if (rows.isEmpty()) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text(
-                "No fonts found.",
+                if (query.isBlank()) "No fonts found." else "No fonts match “$query”.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -55,35 +71,41 @@ internal fun FontsScreen() {
         return
     }
 
-    LazyColumn(modifier = Modifier.fillMaxSize()) {
-        items(rows.size) { index ->
-            when (val row = rows[index]) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize().padding(horizontal = SegmentInset),
+        verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap),
+        contentPadding = PaddingValues(bottom = 16.dp),
+    ) {
+        itemsIndexed(rows) { _, row ->
+            when (row) {
                 is FontRow.Header -> SectionHeader(row.title)
-                is FontRow.Font -> Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) {
-                    Text(
-                        text = row.info.name,
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                    AndroidView(
-                        factory = { ctx ->
-                            TextView(ctx).apply {
-                                textSize = 22f
-                                text = "AaBbCc  0123"
-                                setTextColor(textColor)
-                            }
-                        },
-                        update = { view ->
-                            runCatching {
-                                view.typeface = if (row.info.isAsset) {
-                                    Typeface.createFromAsset(context.assets, row.info.path)
-                                } else {
-                                    Typeface.createFromFile(row.info.path)
+                is FontRow.Entry -> SegmentedListItem(
+                    shapes = ListItemDefaults.segmentedShapes(index = row.indexInGroup, count = row.groupCount),
+                    colors = scizorSegmentedColors(),
+                    supportingContent = {
+                        AndroidView(
+                            factory = { ctx ->
+                                TextView(ctx).apply {
+                                    textSize = 22f
+                                    text = "AaBbCc  0123"
+                                    setTextColor(textColor)
                                 }
-                            }
-                        },
-                    )
-                }
+                            },
+                            update = { view ->
+                                runCatching {
+                                    view.typeface = if (row.info.isAsset) {
+                                        Typeface.createFromAsset(context.assets, row.info.path)
+                                    } else {
+                                        Typeface.createFromFile(row.info.path)
+                                    }
+                                }
+                            },
+                        )
+                    },
+                    content = {
+                        Text(row.info.name, color = MaterialTheme.colorScheme.primary)
+                    },
+                )
             }
         }
     }

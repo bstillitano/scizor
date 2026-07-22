@@ -15,8 +15,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Cancel
-import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -37,6 +36,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.scizor.ui.rememberTopBarAction
+import com.scizor.ui.rememberTopBarSubtitle
 import com.scizor.ui.SectionHeader
 import com.scizor.ui.SegmentedColumn
 import com.scizor.ui.scizorSegmentedColors
@@ -57,33 +58,19 @@ internal fun NotificationTesterScreen() {
         ActivityResultContracts.RequestPermission(),
     ) { granted -> hasPermission = granted }
 
-    Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-        // Permission status
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Icon(
-                if (hasPermission) Icons.Filled.CheckCircle else Icons.Filled.Cancel,
-                null,
-                tint = if (hasPermission) Color(0xFF2E7D32) else Color(0xFFD23B3B),
+    // Permission status becomes the app-bar subtitle; a settings cog opens app notification settings.
+    rememberTopBarSubtitle(if (hasPermission) "Notifications permitted" else "Permission required")
+    rememberTopBarAction(Icons.Filled.Settings, "Notification settings") {
+        runCatching {
+            context.startActivity(
+                Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                    .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
             )
-            Text(
-                if (hasPermission) "Notifications permitted" else "Permission required",
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.weight(1f).padding(start = 8.dp),
-            )
-            OutlinedButton(onClick = {
-                runCatching {
-                    context.startActivity(
-                        Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
-                            .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
-                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
-                    )
-                }
-            }) { Text("Settings") }
         }
+    }
 
+    Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
         SectionHeader("Content")
         OutlinedTextField(
             value = title,

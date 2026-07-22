@@ -20,6 +20,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -37,6 +38,8 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.scizor.ui.rememberSearchQuery
+import com.scizor.ui.rememberTopBarAction
 import com.scizor.ui.ScizorNavigator
 import com.scizor.ui.SectionHeader
 import com.scizor.ui.SegmentedColumn
@@ -47,8 +50,16 @@ import java.util.Date
 @Composable
 internal fun NotificationLoggerScreen(navigator: ScizorNavigator) {
     val context = LocalContext.current
-    val items by NotificationLogger.items.collectAsStateWithLifecycle()
+    val all by NotificationLogger.items.collectAsStateWithLifecycle()
     val enabled = NotificationLogger.isEnabled(context)
+    val query = rememberSearchQuery("Search notifications")
+    if (all.isNotEmpty()) {
+        rememberTopBarAction(Icons.Filled.Delete, "Clear") { NotificationLogger.clear() }
+    }
+    val items = all.filter { n ->
+        query.isBlank() || n.title.contains(query, true) || n.text.contains(query, true) ||
+            n.packageName.contains(query, true)
+    }
 
     Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
         if (!enabled) {
@@ -102,11 +113,6 @@ internal fun NotificationLoggerScreen(navigator: ScizorNavigator) {
                 },
                 content = { Text(notification.title.ifBlank { "(no title)" }) },
             )
-        }
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-            TextButton(onClick = { NotificationLogger.clear() }) {
-                Text("Clear", color = MaterialTheme.colorScheme.error)
-            }
         }
     }
 }

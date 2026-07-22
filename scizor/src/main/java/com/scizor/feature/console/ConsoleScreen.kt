@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.scizor.ui.rememberSearchQuery
+import com.scizor.ui.rememberTopBarAction
 
 @Composable
 internal fun ConsoleScreen(viewModel: ConsoleViewModel = viewModel()) {
@@ -48,6 +49,9 @@ internal fun ConsoleScreen(viewModel: ConsoleViewModel = viewModel()) {
     // Drive the app-bar search into the view model's filter.
     val query = rememberSearchQuery("Filter")
     LaunchedEffect(query) { viewModel.setQuery(query) }
+    if (entries.isNotEmpty()) {
+        rememberTopBarAction(Icons.Filled.Delete, "Clear", viewModel::clear)
+    }
 
     LaunchedEffect(entries.size, autoScroll) {
         if (autoScroll && entries.isNotEmpty()) listState.animateScrollToItem(entries.lastIndex)
@@ -79,15 +83,6 @@ internal fun ConsoleScreen(viewModel: ConsoleViewModel = viewModel()) {
                 onClick = { viewModel.setAutoScroll(!autoScroll) },
                 label = { Text("Auto-scroll") },
             )
-        }
-
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
-            horizontalArrangement = Arrangement.End,
-        ) {
-            IconButton(onClick = viewModel::clear) {
-                Icon(Icons.Filled.Delete, contentDescription = "Clear")
-            }
         }
 
         if (entries.isEmpty()) {

@@ -109,7 +109,19 @@ private fun ScizorHost(onClose: () -> Unit) {
                             modifier = Modifier.fillMaxWidth().focusRequester(focus),
                         )
                     } else {
-                        Text(text = title)
+                        val subtitle = search.subtitle
+                        if (subtitle == null) {
+                            Text(text = title)
+                        } else {
+                            androidx.compose.foundation.layout.Column {
+                                Text(text = title)
+                                Text(
+                                    text = subtitle,
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
                     }
                 },
                 navigationIcon = {
@@ -135,9 +147,17 @@ private fun ScizorHost(onClose: () -> Unit) {
                     }
                 },
                 actions = {
-                    if (search.placeholder != null && !search.active) {
-                        IconButton(onClick = { search.active = true }) {
-                            Icon(Icons.Filled.Search, contentDescription = "Search")
+                    if (!search.active) {
+                        val actionIcon = search.actionIcon
+                        if (actionIcon != null) {
+                            IconButton(onClick = { search.onAction?.invoke() }) {
+                                Icon(actionIcon, contentDescription = search.actionDescription)
+                            }
+                        }
+                        if (search.placeholder != null) {
+                            IconButton(onClick = { search.active = true }) {
+                                Icon(Icons.Filled.Search, contentDescription = "Search")
+                            }
                         }
                     }
                 },

@@ -59,12 +59,14 @@ private const val PAGE_SIZE = 50
 @Composable
 internal fun DatabaseBrowserScreen(navigator: ScizorNavigator) {
     val context = LocalContext.current
-    val databases = remember { DatabaseBrowser.databases(context) }
+    val query = rememberSearchQuery("Search databases")
+    val all = remember { DatabaseBrowser.databases(context) }
 
-    if (databases.isEmpty()) {
+    if (all.isEmpty()) {
         EmptyState("No SQLite databases found in this app.")
         return
     }
+    val databases = all.filter { query.isBlank() || it.name.contains(query, true) }
     Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
         SectionHeader("Databases")
         SegmentedColumn(items = databases) { db, shapes ->

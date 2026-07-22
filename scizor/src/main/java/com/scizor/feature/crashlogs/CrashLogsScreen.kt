@@ -18,9 +18,11 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SegmentedListItem
@@ -42,6 +44,7 @@ import com.scizor.feature.network.TextReaderScreen
 import com.scizor.ui.ScizorNavigator
 import com.scizor.ui.SectionHeader
 import com.scizor.ui.rememberSearchQuery
+import com.scizor.ui.rememberTopBarAction
 import com.scizor.ui.SegmentInset
 import com.scizor.ui.SegmentedColumn
 import com.scizor.ui.scizorSegmentedColors
@@ -54,31 +57,15 @@ internal fun CrashLogsScreen(navigator: ScizorNavigator) {
     var refresh by remember { mutableIntStateOf(0) }
     val query = rememberSearchQuery("Search crashes")
     val crashes = remember(refresh) { CrashLogger.crashes(context) }
+    if (crashes.isNotEmpty()) {
+        rememberTopBarAction(Icons.Filled.Delete, "Clear all") { CrashLogger.clear(context); refresh++ }
+    }
+    var confirmRecord by remember { mutableStateOf(false) }
     val filtered = crashes.filter {
         query.isBlank() || it.type.contains(query, true) || it.message.contains(query, true)
     }
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            TextButton(
-                onClick = {
-                    CrashLogger.recordForDemo(context, RuntimeException("Recorded test crash from Scizor"))
-                    refresh++
-                },
-                modifier = Modifier.weight(1f),
-            ) {
-                Text("Record test crash")
-            }
-            if (crashes.isNotEmpty()) {
-                IconButton(onClick = { CrashLogger.clear(context); refresh++ }) {
-                    Icon(Icons.Filled.Delete, contentDescription = "Clear all")
-                }
-            }
-        }
-
+    Box(modifier = Modifier.fillMaxSize()) {
         if (filtered.isEmpty()) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text(
@@ -88,28 +75,52 @@ internal fun CrashLogsScreen(navigator: ScizorNavigator) {
                     modifier = Modifier.padding(24.dp),
                 )
             }
-            return
-        }
-
-        LazyColumn(
-            modifier = Modifier.fillMaxSize().padding(horizontal = SegmentInset),
-            verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap),
-            contentPadding = PaddingValues(vertical = 12.dp),
-        ) {
-            itemsIndexed(filtered, key = { _, it -> it.id }) { index, crash ->
-                SegmentedListItem(
-                    shapes = ListItemDefaults.segmentedShapes(index = index, count = filtered.size),
-                    colors = scizorSegmentedColors(),
-                    overlineContent = { Text("${formatDate(crash.timestamp)}  ·  ${crash.appVersion}") },
-                    supportingContent = { if (crash.message.isNotBlank()) Text(crash.message, maxLines = 2) },
-                    trailingContent = { Chevron() },
-                    modifier = Modifier.clickable {
-                        navigator.push("Crash Details") { CrashDetailScreen(crash, navigator) }
-                    },
-                    content = { Text(crash.type.substringAfterLast('.')) },
-                )
+        } else {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize().padding(horizontal = SegmentInset),
+                verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap),
+                contentPadding = PaddingValues(vertical = 12.dp),
+            ) {
+                itemsIndexed(filtered, key = { _, it -> it.id }) { index, crash ->
+                    SegmentedListItem(
+                        shapes = ListItemDefaults.segmentedShapes(index = index, count = filtered.size),
+                        colors = scizorSegmentedColors(),
+                        overlineContent = { Text("${formatDate(crash.timestamp)}  ·  ${crash.appVersion}") },
+                        supportingContent = { if (crash.message.isNotBlank()) Text(crash.message, maxLines = 2) },
+                        trailingContent = { Chevron() },
+                        modifier = Modifier.clickable {
+                            navigator.push("Crash Details") { CrashDetailScreen(crash, navigator) }
+                        },
+                        content = { Text(crash.type.substringAfterLast('.')) },
+                    )
+                }
             }
         }
+
+        FloatingActionButton(
+            onClick = { confirmRecord = true },
+            modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp),
+        ) {
+            Icon(Icons.Filled.Add, contentDescription = "Record test crash")
+        }
+    }
+
+    if (confirmRecord) {
+        AlertDialog(
+            onDismissRequest = { confirmRecord = false },
+            title = { Text("Record a test crash?") },
+            text = {
+                Text("Logs a sample non-fatal crash so you can preview the crash report. Your app keeps running.")
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    CrashLogger.recordForDemo(context, RuntimeException("Recorded test crash from Scizor"))
+                    refresh++
+                    confirmRecord = false
+                }) { Text("Record") }
+            },
+            dismissButton = { TextButton(onClick = { confirmRecord = false }) { Text("Cancel") } },
+        )
     }
 }
 

@@ -30,15 +30,17 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.scizor.ui.ScizorNavigator
+import com.scizor.ui.rememberSearchQuery
 import com.scizor.ui.SectionHeader
 import com.scizor.ui.SegmentedColumn
 import com.scizor.ui.scizorSegmentedColors
 
 @Composable
 internal fun CookiesScreen(navigator: ScizorNavigator) {
-    val cookies = remember { CookieBrowser.cookies() }
+    val all = remember { CookieBrowser.cookies() }
+    val query = rememberSearchQuery("Search cookies")
 
-    if (cookies.isEmpty()) {
+    if (all.isEmpty()) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text(
                 "No cookies observed in captured traffic.\nMake requests through Scizor's interceptor first.",
@@ -48,6 +50,11 @@ internal fun CookiesScreen(navigator: ScizorNavigator) {
             )
         }
         return
+    }
+
+    val cookies = all.filter { c ->
+        query.isBlank() || c.name.contains(query, true) || c.host.contains(query, true) ||
+            c.value.contains(query, true)
     }
 
     Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
