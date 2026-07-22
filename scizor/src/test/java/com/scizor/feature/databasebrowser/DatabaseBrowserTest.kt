@@ -19,11 +19,15 @@ class DatabaseBrowserTest {
             db.execSQL("INSERT INTO t (name) VALUES ('alpha')")
         }
 
-        assertTrue(DatabaseBrowser.databases(context).contains("test.db"))
-        assertTrue(DatabaseBrowser.tables(context, "test.db").contains("t"))
+        assertTrue(DatabaseBrowser.databases(context).any { it.name == "test.db" })
+        assertTrue(DatabaseBrowser.tables(context, "test.db").any { it.name == "t" })
 
         val data = DatabaseBrowser.rows(context, "test.db", "t")
         assertTrue(data.columns.contains("name"))
         assertTrue(data.rows.any { it.contains("alpha") })
+
+        val schema = DatabaseBrowser.schema(context, "test.db", "t")
+        assertTrue(schema.columns.any { it.name == "id" && it.primaryKey })
+        assertTrue(DatabaseBrowser.count(context, "test.db", "t") == 1)
     }
 }
