@@ -6,6 +6,7 @@ import android.content.Intent
 import com.scizor.core.ScizorActivity
 import com.scizor.core.ScizorStore
 import com.scizor.core.ShakeDetector
+import com.scizor.core.registerBuiltInFeatures
 import com.scizor.feature.custom.DeveloperOption
 
 /**
@@ -50,6 +51,7 @@ object Scizor {
         if (this.application != null) return
         this.application = application
         store = ScizorStore(application).also { it.preload() }
+        registerBuiltInFeatures()
         applyInvocationGesture(application)
     }
 
