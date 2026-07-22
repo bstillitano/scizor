@@ -39,6 +39,7 @@ internal fun scizorApiSurface(application: Application) {
     Scizor.invocationGesture = ScizorGesture.NONE
     Scizor.developerOptions = listOf(DeveloperOption(title = "x", icon = null) {})
     Scizor.environmentVariables = mapOf("k" to "v")
+    Scizor.fcmToken = "token"
     val network: NetworkLogger = Scizor.network
     val flags: FeatureFlags = Scizor.featureFlags
     val servers: ServerConfiguration = Scizor.servers

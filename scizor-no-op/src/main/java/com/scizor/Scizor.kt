@@ -21,6 +21,8 @@ object Scizor {
 
     var environmentVariables: Map<String, String> = emptyMap()
 
+    var fcmToken: String? = null
+
     val network: NetworkLogger get() = NetworkLogger
 
     val featureFlags: FeatureFlags get() = FeatureFlags

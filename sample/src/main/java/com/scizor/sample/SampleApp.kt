@@ -39,6 +39,8 @@ class SampleApp : Application() {
             "FEATURE_SET" to "full",
         )
 
+        Scizor.fcmToken = "demo-fcm-token-a1b2c3d4e5f6g7h8i9j0"
+
         Scizor.developerOptions = listOf(
             DeveloperOption(title = "Log a test message") {
                 Log.i("ScizorSample", "Test log from developer option")

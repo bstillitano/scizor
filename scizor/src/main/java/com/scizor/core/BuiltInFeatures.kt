@@ -4,21 +4,29 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.CompareArrows
+import androidx.compose.material.icons.filled.Cookie
 import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Link
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.Terminal
 import androidx.compose.material.icons.filled.Tune
 import com.scizor.feature.console.ConsoleScreen
+import com.scizor.feature.cookies.CookiesScreen
 import com.scizor.feature.crashlogs.CrashLogsScreen
 import com.scizor.feature.custom.EnvironmentVariablesScreen
 import com.scizor.feature.databasebrowser.DatabaseBrowserScreen
 import com.scizor.feature.deeplink.DeepLinkTesterScreen
 import com.scizor.feature.featureflags.FeatureFlagsScreen
 import com.scizor.feature.filebrowser.FileBrowserScreen
+import com.scizor.feature.keystore.KeystoreScreen
+import com.scizor.feature.location.LocationSpooferScreen
 import com.scizor.feature.network.NetworkScreen
+import com.scizor.feature.notifications.NotificationTesterScreen
 import com.scizor.feature.preferences.PreferencesScreen
 import com.scizor.feature.servers.ServersScreen
 
@@ -101,8 +109,40 @@ internal fun registerBuiltInFeatures() {
             screen = { DatabaseBrowserScreen(it) },
         ),
     )
+    FeatureRegistry.register(
+        ScizorMenuEntry(
+            id = "cookies",
+            title = "Cookie Browser",
+            subtitle = "Cookies seen in captured traffic",
+            icon = Icons.Filled.Cookie,
+            section = "Data",
+            screen = { CookiesScreen() },
+        ),
+    )
+
+    // Security
+    FeatureRegistry.register(
+        ScizorMenuEntry(
+            id = "keystore",
+            title = "Keystore Browser",
+            subtitle = "AndroidKeyStore aliases",
+            icon = Icons.Filled.Key,
+            section = "Security",
+            screen = { KeystoreScreen() },
+        ),
+    )
 
     // System Tools
+    FeatureRegistry.register(
+        ScizorMenuEntry(
+            id = "location",
+            title = "Location Spoofer",
+            subtitle = "Set a mock GPS location",
+            icon = Icons.Filled.LocationOn,
+            section = "System Tools",
+            screen = { LocationSpooferScreen() },
+        ),
+    )
     FeatureRegistry.register(
         ScizorMenuEntry(
             id = "console",
@@ -131,6 +171,18 @@ internal fun registerBuiltInFeatures() {
             icon = Icons.Filled.BugReport,
             section = "System Tools",
             screen = { CrashLogsScreen(it) },
+        ),
+    )
+
+    // Notifications
+    FeatureRegistry.register(
+        ScizorMenuEntry(
+            id = "notification_tester",
+            title = "Notification Tester",
+            subtitle = "Post a local test notification",
+            icon = Icons.Filled.Notifications,
+            section = "Notifications",
+            screen = { NotificationTesterScreen() },
         ),
     )
 }

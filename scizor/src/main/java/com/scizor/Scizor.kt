@@ -52,6 +52,9 @@ object Scizor {
     /** Read-only key/value pairs surfaced in the menu's environment screen. */
     var environmentVariables: Map<String, String> = emptyMap()
 
+    /** FCM registration token, if the host provides it — shown in Notifications. */
+    var fcmToken: String? = null
+
     /** HTTP traffic logger. Add [NetworkLogger.interceptor] to your OkHttpClient. */
     val network: NetworkLogger get() = NetworkLogger
 

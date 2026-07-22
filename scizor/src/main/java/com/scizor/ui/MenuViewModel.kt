@@ -44,6 +44,9 @@ internal class MenuViewModel : ViewModel() {
                 if (section == "Networking") {
                     rows += MenuRow.Info("ip_address", "IP Address", ipAddress ?: "Loading…")
                 }
+                if (section == "Notifications") {
+                    Scizor.fcmToken?.let { rows += MenuRow.Info("fcm_token", "FCM Token", it) }
+                }
                 rows += entries.map { entry ->
                     MenuRow.Action(
                         id = entry.id,
