@@ -43,9 +43,9 @@ class ScizorInterceptor : Interceptor {
         }
 
         val durationMs = (System.nanoTime() - startNs) / 1_000_000
-        val responseBody = runCatching {
-            response.peekBody(MAX_BODY_BYTES).string()
-        }.getOrNull()
+        val peeked = runCatching { response.peekBody(MAX_BODY_BYTES) }.getOrNull()
+        val responseBody = runCatching { peeked?.string() }.getOrNull()
+        val graphql = GraphQL.parse(request.url.toString(), requestBody)
 
         NetworkLogger.record(
             NetworkTransaction(
@@ -59,6 +59,14 @@ class ScizorInterceptor : Interceptor {
                 responseBody = responseBody,
                 durationMs = durationMs,
                 timestamp = timestamp,
+                contentType = response.header("Content-Type"),
+                cacheControl = request.cacheControl.toString().ifBlank { null },
+                timeoutMs = chain.readTimeoutMillis().toLong(),
+                responseBytes = responseBody?.toByteArray()?.size,
+                isGraphQL = graphql != null,
+                operationName = graphql?.operationName,
+                operationType = graphql?.operationType,
+                variables = graphql?.variables,
             ),
         )
         return response

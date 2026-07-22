@@ -13,6 +13,14 @@ data class NetworkTransaction(
     val durationMs: Long?,
     val timestamp: Long,
     val error: String? = null,
+    val contentType: String? = null,
+    val cacheControl: String? = null,
+    val timeoutMs: Long? = null,
+    val responseBytes: Int? = null,
+    val isGraphQL: Boolean = false,
+    val operationName: String? = null,
+    val operationType: String? = null,
+    val variables: String? = null,
 ) {
     val host: String
         get() = runCatching { java.net.URI(url).host ?: url }.getOrDefault(url)

@@ -1,6 +1,7 @@
 package com.scizor.feature.crashlogs
 
 import android.content.Context
+import android.os.Build
 import java.io.File
 import java.io.PrintWriter
 import java.io.StringWriter
@@ -12,30 +13,66 @@ internal data class CrashLog(
     val type: String,
     val message: String,
     val threadName: String,
+    val appVersion: String,
+    val osVersion: String,
+    val device: String,
     val stackTrace: String,
-)
+) {
+    /** The full copy/share report — header, environment, then stack trace. */
+    fun fullReport(): String = buildString {
+        appendLine("Crash Report")
+        appendLine("============")
+        appendLine()
+        appendLine("Exception: $type")
+        appendLine("Reason: ${message.ifBlank { "—" }}")
+        appendLine("Thread: ${threadName.ifBlank { "—" }}")
+        appendLine()
+        appendLine("Device: $device")
+        appendLine("OS: $osVersion")
+        appendLine("App: $appVersion")
+        appendLine()
+        appendLine("Stack Trace:")
+        append(stackTrace)
+    }
+}
 
 /**
- * Captures uncaught exceptions and persists them to the app sandbox so they can
- * be reviewed on the next launch. Chains to the host's existing handler, so it
- * never suppresses the app's own crash reporting.
+ * Captures uncaught exceptions and persists them to the app sandbox, along with
+ * app/device environment cached at install time. Chains to the host's existing
+ * handler and keeps at most [MAX_CRASHES] records.
  */
 internal object CrashLogger {
 
     private const val DIR = "scizor_crashes"
+    private const val MAX_CRASHES = 50
 
     private var appContext: Context? = null
     private var installed = false
     private var previous: Thread.UncaughtExceptionHandler? = null
 
+    private var appVersion = "—"
+    private var osVersion = "—"
+    private var device = "—"
+
     fun install(context: Context) {
         appContext = context.applicationContext
+        cacheEnvironment(context)
         if (installed) return
         installed = true
         previous = Thread.getDefaultUncaughtExceptionHandler()
         Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
             runCatching { persist(thread, throwable) }
             previous?.uncaughtException(thread, throwable)
+        }
+    }
+
+    private fun cacheEnvironment(context: Context) {
+        osVersion = "Android ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})"
+        device = "${Build.MANUFACTURER} ${Build.MODEL}"
+        runCatching {
+            val info = context.packageManager.getPackageInfo(context.packageName, 0)
+            val code = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) info.longVersionCode else info.versionCode.toLong()
+            appVersion = "${info.versionName} ($code)"
         }
     }
 
@@ -50,9 +87,18 @@ internal object CrashLogger {
                 appendLine(throwable.javaClass.name)
                 appendLine(throwable.message?.replace("\n", " ") ?: "")
                 appendLine(thread.name)
+                appendLine(appVersion)
+                appendLine(osVersion)
+                appendLine(device)
                 append(trace)
             },
         )
+        trimToMax(dir)
+    }
+
+    private fun trimToMax(dir: File) {
+        val files = dir.listFiles()?.filter { it.extension == "txt" }?.sortedByDescending { it.name } ?: return
+        files.drop(MAX_CRASHES).forEach { it.delete() }
     }
 
     fun crashes(context: Context): List<CrashLog> {
@@ -69,7 +115,10 @@ internal object CrashLogger {
                         type = lines.getOrElse(1) { "" },
                         message = lines.getOrElse(2) { "" },
                         threadName = lines.getOrElse(3) { "" },
-                        stackTrace = lines.drop(4).joinToString("\n"),
+                        appVersion = lines.getOrElse(4) { "—" },
+                        osVersion = lines.getOrElse(5) { "—" },
+                        device = lines.getOrElse(6) { "—" },
+                        stackTrace = lines.drop(7).joinToString("\n"),
                     )
                 }.getOrNull()
             }
@@ -82,6 +131,7 @@ internal object CrashLogger {
     /** Test/demo helper: records a synthetic crash without terminating the process. */
     fun recordForDemo(context: Context, throwable: Throwable) {
         appContext = context.applicationContext
+        cacheEnvironment(context)
         runCatching { persist(Thread.currentThread(), throwable) }
     }
 }

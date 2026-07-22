@@ -65,7 +65,8 @@ private fun NetworkList(
         query.isBlank() ||
             it.url.contains(query, ignoreCase = true) ||
             it.method.contains(query, ignoreCase = true) ||
-            it.status?.toString()?.contains(query) == true
+            it.status?.toString()?.contains(query) == true ||
+            it.operationName?.contains(query, ignoreCase = true) == true
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
@@ -150,17 +151,47 @@ private fun TransactionRow(tx: NetworkTransaction, onClick: () -> Unit) {
             )
         }
         Spacer(Modifier.width(16.dp))
-        Text(
-            text = tx.url,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 3,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier
-                .weight(1f)
-                .padding(end = 16.dp),
-        )
+        Column(modifier = Modifier.weight(1f).padding(end = 16.dp)) {
+            if (tx.isGraphQL && tx.operationName != null) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = tx.operationName,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false),
+                    )
+                    tx.operationType?.let { type ->
+                        Spacer(Modifier.width(6.dp))
+                        Text(
+                            text = type.uppercase(),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onPrimary,
+                            modifier = Modifier
+                                .background(gqlColor(type), androidx.compose.foundation.shape.RoundedCornerShape(4.dp))
+                                .padding(horizontal = 5.dp, vertical = 1.dp),
+                        )
+                    }
+                }
+            }
+            Text(
+                text = tx.url,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
     }
+}
+
+private fun gqlColor(type: String): Color = when (type.lowercase()) {
+    "query" -> Color(0xFF2E7D32)
+    "mutation" -> Color(0xFFE0932F)
+    "subscription" -> Color(0xFF9C27B0)
+    else -> Color(0xFF9E9E9E)
 }
 
 private fun statusColor(tx: NetworkTransaction): Color = when {
