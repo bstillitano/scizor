@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
@@ -27,6 +28,7 @@ import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -35,6 +37,7 @@ import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -46,6 +49,7 @@ import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.scizor.ui.rememberSearchQuery
@@ -184,7 +188,7 @@ private fun TableDataScreen(dbName: String, table: String, navigator: ScizorNavi
                     trailingContent = { Chevron() },
                     modifier = Modifier.clickable {
                         navigator.push("Record") {
-                            RecordDetailScreen(dbName, table, data.columns, row, pkColumn) {
+                            RecordDetailScreen(dbName, table, schema.columns, row, pkColumn) {
                                 refreshKey++
                                 navigator.pop()
                             }
@@ -224,7 +228,7 @@ private fun TableDataScreen(dbName: String, table: String, navigator: ScizorNavi
 
     if (adding) {
         EditRecordDialog(
-            columns = schema.columns.map { it.name },
+            columns = schema.columns,
             row = emptyList(),
             title = "Add record",
             onDismiss = { adding = false },
@@ -309,20 +313,21 @@ private fun SqlScreen(dbName: String) {
                     modifier = Modifier.padding(top = 16.dp),
                 )
                 !r.readOnly -> Text(
-                    "Statement executed.",
+                    "${r.rowsAffected} row(s) affected  ·  ${r.executionMs} ms",
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(top = 16.dp),
                 )
-                r.data != null -> ResultTable(r.data)
+                r.data != null -> ResultTable(r.data, r.executionMs)
             }
         }
     }
 }
 
 @Composable
-private fun ResultTable(data: TableData) {
+private fun ResultTable(data: TableData, executionMs: Long) {
+    val cap = 500
     Column(modifier = Modifier.padding(top = 16.dp)) {
-        Text("${data.rows.size} rows", style = MaterialTheme.typography.labelMedium)
+        Text("${data.rows.size} rows  ·  $executionMs ms", style = MaterialTheme.typography.labelMedium)
         Row(modifier = Modifier.horizontalScroll(rememberScrollState()).padding(top = 8.dp)) {
             Column {
                 Text(
@@ -330,7 +335,7 @@ private fun ResultTable(data: TableData) {
                     style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace),
                     color = MaterialTheme.colorScheme.primary,
                 )
-                data.rows.take(200).forEach { row ->
+                data.rows.take(cap).forEach { row ->
                     Text(
                         row.joinToString("  |  "),
                         style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
@@ -339,6 +344,14 @@ private fun ResultTable(data: TableData) {
                 }
             }
         }
+        if (data.rows.size > cap) {
+            Text(
+                "Showing first $cap of ${data.rows.size} rows.",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 8.dp),
+            )
+        }
     }
 }
 
@@ -346,7 +359,7 @@ private fun ResultTable(data: TableData) {
 private fun RecordDetailScreen(
     dbName: String,
     table: String,
-    columns: List<String>,
+    columns: List<ColumnInfo>,
     row: List<String>,
     pkColumn: String?,
     onChanged: () -> Unit,
@@ -355,12 +368,14 @@ private fun RecordDetailScreen(
     val clipboard = LocalClipboardManager.current
     var editing by remember { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf(false) }
-    val pkValue = pkColumn?.let { pk -> columns.indexOf(pk).takeIf { it >= 0 }?.let { row.getOrNull(it) } }
+    val pkValue = pkColumn?.let { pk ->
+        columns.indexOfFirst { it.name == pk }.takeIf { it >= 0 }?.let { row.getOrNull(it) }
+    }
     val editable = pkColumn != null && pkValue != null
 
     Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
         SectionHeader("Values")
-        val pairs = columns.mapIndexed { i, col -> col to row.getOrElse(i) { "" } }
+        val pairs = columns.mapIndexed { i, col -> col.name to row.getOrElse(i) { "" } }
         SegmentedColumn(items = pairs) { (col, value), shapes ->
             SegmentedListItem(
                 shapes = shapes,
@@ -425,36 +440,111 @@ private fun RecordDetailScreen(
     }
 }
 
+private enum class CellType { INTEGER, REAL, BLOB, TEXT }
+
+private fun cellTypeOf(sqlType: String): CellType {
+    val t = sqlType.uppercase()
+    return when {
+        t.contains("INT") -> CellType.INTEGER
+        t.contains("REAL") || t.contains("FLOA") || t.contains("DOUB") ||
+            t.contains("NUM") || t.contains("DEC") -> CellType.REAL
+        t.contains("BLOB") -> CellType.BLOB
+        else -> CellType.TEXT
+    }
+}
+
+private fun typeSuffix(type: CellType): String = when (type) {
+    CellType.BLOB -> " (base64)"
+    CellType.INTEGER -> " (int)"
+    CellType.REAL -> " (real)"
+    CellType.TEXT -> ""
+}
+
+/** Converts an editor field to a typed [CellValue], or null to omit the column entirely. */
+private fun toCellValue(type: CellType, isNull: Boolean, text: String): CellValue? {
+    if (isNull) return CellValue.Null
+    return when (type) {
+        CellType.TEXT -> CellValue.Text(text)
+        CellType.INTEGER ->
+            if (text.isBlank()) null else text.toLongOrNull()?.let { CellValue.Integer(it) } ?: CellValue.Text(text)
+        CellType.REAL ->
+            if (text.isBlank()) null else text.toDoubleOrNull()?.let { CellValue.Real(it) } ?: CellValue.Text(text)
+        CellType.BLOB ->
+            if (text.isBlank()) null
+            else runCatching { CellValue.Blob(android.util.Base64.decode(text, android.util.Base64.DEFAULT)) }.getOrNull()
+    }
+}
+
+private class FieldState(
+    val column: ColumnInfo,
+    val type: CellType,
+    val text: MutableState<String>,
+    val isNull: MutableState<Boolean>,
+)
+
 @Composable
 private fun EditRecordDialog(
-    columns: List<String>,
+    columns: List<ColumnInfo>,
     row: List<String>,
     onDismiss: () -> Unit,
-    onSave: (Map<String, String>) -> Unit,
+    onSave: (Map<String, CellValue>) -> Unit,
     title: String = "Edit record",
 ) {
-    val edited = remember {
-        columns.mapIndexed { i, col -> col to mutableStateOf(row.getOrElse(i) { "" }) }.toMap()
+    val fields = remember {
+        columns.mapIndexed { i, col ->
+            val initial = row.getOrElse(i) { "" }
+            val type = cellTypeOf(col.type)
+            val startNull = row.isNotEmpty() && initial == "null"
+            // Never prefill the "<blob N bytes>" placeholder — leaving it blank keeps the value.
+            val startText = if (startNull || type == CellType.BLOB) "" else initial
+            FieldState(col, type, mutableStateOf(startText), mutableStateOf(startNull))
+        }
     }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(title) },
         text = {
             Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-                columns.forEach { col ->
-                    val state = edited.getValue(col)
-                    OutlinedTextField(
-                        value = state.value,
-                        onValueChange = { state.value = it },
-                        label = { Text(col) },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                    )
+                fields.forEach { f ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        OutlinedTextField(
+                            value = f.text.value,
+                            onValueChange = { f.text.value = it },
+                            enabled = !f.isNull.value,
+                            label = { Text(f.column.name + typeSuffix(f.type)) },
+                            singleLine = f.type != CellType.TEXT,
+                            keyboardOptions = KeyboardOptions(
+                                keyboardType = when (f.type) {
+                                    CellType.INTEGER -> KeyboardType.Number
+                                    CellType.REAL -> KeyboardType.Decimal
+                                    else -> KeyboardType.Text
+                                },
+                            ),
+                            modifier = Modifier.weight(1f),
+                        )
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier.padding(start = 8.dp),
+                        ) {
+                            Text("NULL", style = MaterialTheme.typography.labelSmall)
+                            Checkbox(checked = f.isNull.value, onCheckedChange = { f.isNull.value = it })
+                        }
+                    }
                 }
             }
         },
         confirmButton = {
-            TextButton(onClick = { onSave(edited.mapValues { it.value.value }) }) { Text("Save") }
+            TextButton(onClick = {
+                val values = buildMap {
+                    fields.forEach { f ->
+                        toCellValue(f.type, f.isNull.value, f.text.value)?.let { put(f.column.name, it) }
+                    }
+                }
+                onSave(values)
+            }) { Text("Save") }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
     )

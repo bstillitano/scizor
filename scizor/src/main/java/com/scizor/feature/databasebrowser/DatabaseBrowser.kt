@@ -23,12 +23,23 @@ internal data class Schema(
 /** Columns + rows read from a table (values stringified for display). */
 internal data class TableData(val columns: List<String>, val rows: List<List<String>>)
 
+/** A typed cell value for writes, so NULL, integers, reals and blobs round-trip correctly. */
+internal sealed interface CellValue {
+    object Null : CellValue
+    data class Text(val value: String) : CellValue
+    data class Integer(val value: Long) : CellValue
+    data class Real(val value: Double) : CellValue
+    /** Raw bytes, entered/edited as base64. */
+    data class Blob(val bytes: ByteArray) : CellValue
+}
+
 /** Result of a raw SQL execution. */
 internal data class QueryResult(
     val data: TableData? = null,
     val rowsAffected: Int = 0,
     val error: String? = null,
     val readOnly: Boolean = true,
+    val executionMs: Long = 0,
 )
 
 /** Browser over the app's SQLite databases (including Room), with read/write support. */
@@ -110,26 +121,32 @@ internal object DatabaseBrowser {
         val trimmed = sql.trim()
         val readOnly = trimmed.substringBefore(' ').uppercase() in setOf("SELECT", "PRAGMA", "EXPLAIN")
         val db = readWrite(context, dbName) ?: return QueryResult(error = "Cannot open database")
+        val start = android.os.SystemClock.elapsedRealtime()
         return db.use {
             runCatching {
                 if (readOnly) {
-                    it.rawQuery(trimmed, null).use { c -> QueryResult(TableData(c.columnNames.toList(), readRows(c)), readOnly = true) }
+                    it.rawQuery(trimmed, null).use { c ->
+                        val data = TableData(c.columnNames.toList(), readRows(c))
+                        QueryResult(data, readOnly = true, executionMs = elapsed(start))
+                    }
                 } else {
                     it.execSQL(trimmed)
-                    QueryResult(rowsAffected = -1, readOnly = false)
+                    QueryResult(rowsAffected = changes(it), readOnly = false, executionMs = elapsed(start))
                 }
-            }.getOrElse { e -> QueryResult(error = e.message ?: "SQL error") }
+            }.getOrElse { e -> QueryResult(error = e.message ?: "SQL error", executionMs = elapsed(start)) }
         }
     }
 
-    fun insertRow(context: Context, dbName: String, table: String, values: Map<String, String>): Boolean =
+    /** Rows changed by the most recent statement on this connection. */
+    private fun changes(db: SQLiteDatabase): Int = runCatching {
+        db.rawQuery("SELECT changes()", null).use { c -> if (c.moveToFirst()) c.getInt(0) else 0 }
+    }.getOrDefault(0)
+
+    private fun elapsed(start: Long): Long = android.os.SystemClock.elapsedRealtime() - start
+
+    fun insertRow(context: Context, dbName: String, table: String, values: Map<String, CellValue>): Boolean =
         readWrite(context, dbName)?.use {
-            runCatching {
-                val cv = ContentValues().apply {
-                    values.forEach { (k, v) -> if (v.isNotEmpty()) put(k, v) }
-                }
-                it.insert("\"$table\"", null, cv) >= 0
-            }.getOrDefault(false)
+            runCatching { it.insert("\"$table\"", null, contentValues(values)) >= 0 }.getOrDefault(false)
         } ?: false
 
     fun deleteRow(context: Context, dbName: String, table: String, pkColumn: String, pkValue: String): Boolean =
@@ -143,13 +160,24 @@ internal object DatabaseBrowser {
         table: String,
         pkColumn: String,
         pkValue: String,
-        values: Map<String, String>,
+        values: Map<String, CellValue>,
     ): Boolean = readWrite(context, dbName)?.use {
         runCatching {
-            val cv = ContentValues().apply { values.forEach { (k, v) -> put(k, v) } }
-            it.update("\"$table\"", cv, "\"$pkColumn\" = ?", arrayOf(pkValue)) > 0
+            it.update("\"$table\"", contentValues(values), "\"$pkColumn\" = ?", arrayOf(pkValue)) > 0
         }.getOrDefault(false)
     } ?: false
+
+    private fun contentValues(values: Map<String, CellValue>): ContentValues = ContentValues().apply {
+        values.forEach { (k, v) ->
+            when (v) {
+                is CellValue.Null -> putNull(k)
+                is CellValue.Text -> put(k, v.value)
+                is CellValue.Integer -> put(k, v.value)
+                is CellValue.Real -> put(k, v.value)
+                is CellValue.Blob -> put(k, v.bytes)
+            }
+        }
+    }
 
     private fun readRows(cursor: Cursor): List<List<String>> = buildList {
         while (cursor.moveToNext()) {
