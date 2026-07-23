@@ -5,7 +5,6 @@
 
 package com.scizor.feature.keystore
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,10 +15,12 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -32,8 +33,10 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import com.scizor.ui.ScizorNavigator
 import com.scizor.ui.EmptyState
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Key
 import com.scizor.ui.rememberSearchQuery
+import com.scizor.ui.rememberTopBarAction
 import com.scizor.ui.SectionHeader
 import com.scizor.ui.SegmentedColumn
 import com.scizor.ui.scizorSegmentedColors
@@ -42,8 +45,15 @@ import java.util.Date
 
 @Composable
 internal fun KeystoreScreen(navigator: ScizorNavigator) {
-    val entries = remember { KeystoreBrowser.entries() }
+    var refresh by remember { mutableStateOf(0) }
+    val entries = remember(refresh) { KeystoreBrowser.entries() }
     val query = rememberSearchQuery("Search aliases")
+    var pendingDelete by remember { mutableStateOf<String?>(null) }
+    var confirmClearAll by remember { mutableStateOf(false) }
+
+    if (entries.isNotEmpty()) {
+        rememberTopBarAction(Icons.Filled.Delete, "Clear all") { confirmClearAll = true }
+    }
 
     if (entries.isEmpty()) {
         EmptyState(
@@ -61,17 +71,49 @@ internal fun KeystoreScreen(navigator: ScizorNavigator) {
     Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
         if (keys.isNotEmpty()) {
             SectionHeader("Keys")
-            EntryList(keys, navigator)
+            EntryList(keys, navigator) { pendingDelete = it }
         }
         if (certs.isNotEmpty()) {
             SectionHeader("Certificates")
-            EntryList(certs, navigator)
+            EntryList(certs, navigator) { pendingDelete = it }
         }
+    }
+
+    pendingDelete?.let { alias ->
+        AlertDialog(
+            onDismissRequest = { pendingDelete = null },
+            title = { Text("Delete “$alias”?") },
+            text = { Text("This permanently removes the entry from the AndroidKeyStore. It cannot be undone.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    KeystoreBrowser.delete(alias)
+                    pendingDelete = null
+                    refresh++
+                }) { Text("Delete") }
+            },
+            dismissButton = { TextButton(onClick = { pendingDelete = null }) { Text("Cancel") } },
+        )
+    }
+
+    if (confirmClearAll) {
+        AlertDialog(
+            onDismissRequest = { confirmClearAll = false },
+            title = { Text("Clear the keystore?") },
+            text = { Text("Deletes every key and certificate this app holds in the AndroidKeyStore. This cannot be undone.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    KeystoreBrowser.clearAll()
+                    confirmClearAll = false
+                    refresh++
+                }) { Text("Clear all") }
+            },
+            dismissButton = { TextButton(onClick = { confirmClearAll = false }) { Text("Cancel") } },
+        )
     }
 }
 
 @Composable
-private fun EntryList(entries: List<KeystoreEntry>, navigator: ScizorNavigator) {
+private fun EntryList(entries: List<KeystoreEntry>, navigator: ScizorNavigator, onDelete: (String) -> Unit) {
     SegmentedColumn(items = entries) { entry, shapes ->
         val created = if (entry.created > 0) {
             DateFormat.getDateInstance(DateFormat.MEDIUM).format(Date(entry.created))
@@ -79,7 +121,10 @@ private fun EntryList(entries: List<KeystoreEntry>, navigator: ScizorNavigator) 
             "—"
         }
         SegmentedListItem(
-            onClick = { navigator.push(entry.alias) { KeystoreDetailScreen(entry.alias) } },
+            modifier = Modifier.combinedClickable(
+                onClick = { navigator.push(entry.alias) { KeystoreDetailScreen(entry.alias) } },
+                onLongClick = { onDelete(entry.alias) },
+            ),
             shapes = shapes,
             colors = scizorSegmentedColors(),
             supportingContent = { Text("${entry.type}  ·  $created") },

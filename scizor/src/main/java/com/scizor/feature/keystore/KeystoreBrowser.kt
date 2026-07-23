@@ -59,4 +59,16 @@ internal object KeystoreBrowser {
         is ECPublicKey -> key.params.curve.field.fieldSize
         else -> null
     }
+
+    /** Deletes a single alias from the AndroidKeyStore. Returns true on success. */
+    fun delete(alias: String): Boolean = runCatching {
+        KeyStore.getInstance("AndroidKeyStore").apply { load(null) }.deleteEntry(alias)
+        true
+    }.getOrDefault(false)
+
+    /** Deletes every alias in the AndroidKeyStore. */
+    fun clearAll() = runCatching {
+        val keyStore = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
+        keyStore.aliases().toList().forEach { runCatching { keyStore.deleteEntry(it) } }
+    }
 }

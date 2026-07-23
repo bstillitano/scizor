@@ -5,7 +5,6 @@
 
 package com.scizor.feature.cookies
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,12 +17,20 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.CallMade
 import androidx.compose.material.icons.filled.CallReceived
 import androidx.compose.material.icons.filled.Cookie
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboardManager
@@ -33,14 +40,21 @@ import androidx.compose.ui.unit.dp
 import com.scizor.ui.EmptyState
 import com.scizor.ui.ScizorNavigator
 import com.scizor.ui.rememberSearchQuery
+import com.scizor.ui.rememberTopBarAction
 import com.scizor.ui.SectionHeader
 import com.scizor.ui.SegmentedColumn
 import com.scizor.ui.scizorSegmentedColors
 
 @Composable
 internal fun CookiesScreen(navigator: ScizorNavigator) {
-    val all = remember { CookieBrowser.cookies() }
+    var refresh by remember { mutableStateOf(0) }
+    val all = remember(refresh) { CookieBrowser.cookies() }
     val query = rememberSearchQuery("Search cookies")
+    var confirmClearAll by remember { mutableStateOf(false) }
+
+    if (all.isNotEmpty()) {
+        rememberTopBarAction(Icons.Filled.Delete, "Clear all") { confirmClearAll = true }
+    }
 
     if (all.isEmpty()) {
         EmptyState(
@@ -59,25 +73,56 @@ internal fun CookiesScreen(navigator: ScizorNavigator) {
     Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
         SectionHeader("Cookies")
         SegmentedColumn(items = cookies) { cookie, shapes ->
-            SegmentedListItem(
-                shapes = shapes,
-                colors = scizorSegmentedColors(),
-                overlineContent = { Text(cookie.host) },
-                leadingContent = {
-                    Icon(
-                        imageVector = if (cookie.sent) Icons.Filled.CallMade else Icons.Filled.CallReceived,
-                        contentDescription = if (cookie.sent) "Sent" else "Received",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            var menuOpen by remember { mutableStateOf(false) }
+            Box {
+                SegmentedListItem(
+                    shapes = shapes,
+                    colors = scizorSegmentedColors(),
+                    overlineContent = { Text(cookie.host) },
+                    leadingContent = {
+                        Icon(
+                            imageVector = if (cookie.sent) Icons.Filled.CallMade else Icons.Filled.CallReceived,
+                            contentDescription = if (cookie.sent) "Sent" else "Received",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    },
+                    supportingContent = { Text(cookie.value, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                    trailingContent = { Chevron() },
+                    modifier = Modifier.combinedClickable(
+                        onClick = { navigator.push(cookie.name) { CookieDetailScreen(cookie) } },
+                        onLongClick = { menuOpen = true },
+                    ),
+                    content = { Text(cookie.name) },
+                )
+                DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                    DropdownMenuItem(
+                        text = { Text("Delete cookie") },
+                        leadingIcon = { Icon(Icons.Filled.Delete, null) },
+                        onClick = {
+                            menuOpen = false
+                            CookieBrowser.delete(cookie)
+                            refresh++
+                        },
                     )
-                },
-                supportingContent = { Text(cookie.value, maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                trailingContent = { Chevron() },
-                modifier = Modifier.clickable {
-                    navigator.push(cookie.name) { CookieDetailScreen(cookie) }
-                },
-                content = { Text(cookie.name) },
-            )
+                }
+            }
         }
+    }
+
+    if (confirmClearAll) {
+        AlertDialog(
+            onDismissRequest = { confirmClearAll = false },
+            title = { Text("Clear all cookies?") },
+            text = { Text("Hides every listed cookie and clears the host-logged and WebView cookie stores.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    CookieBrowser.clearAll()
+                    confirmClearAll = false
+                    refresh++
+                }) { Text("Clear all") }
+            },
+            dismissButton = { TextButton(onClick = { confirmClearAll = false }) { Text("Cancel") } },
+        )
     }
 }
 

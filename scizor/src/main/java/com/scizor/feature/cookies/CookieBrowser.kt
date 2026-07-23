@@ -27,6 +27,15 @@ internal object CookieBrowser {
     /** Cookies the host app registered directly (in addition to captured traffic). */
     private val logged = mutableListOf<Cookie>()
 
+    /**
+     * Keys hidden by an explicit delete / clear-all. Cookies are a derived view over
+     * traffic, so deletion is modelled by suppressing keys; genuinely new cookies from
+     * later traffic still surface.
+     */
+    private val dismissed = mutableSetOf<String>()
+
+    private fun key(c: Cookie) = "${c.host}|${c.name}|${c.sent}"
+
     /** Records a cookie supplied by the host app. */
     fun log(
         name: String,
@@ -55,6 +64,19 @@ internal object CookieBrowser {
 
     fun clearLogged() = logged.clear()
 
+    /** Hides a single cookie (removing it from the host-logged set if it came from there). */
+    fun delete(cookie: Cookie) {
+        dismissed += key(cookie)
+        logged.removeAll { key(it) == key(cookie) }
+    }
+
+    /** Hides every currently-visible cookie and clears host-logged + WebView stores. */
+    fun clearAll() {
+        cookies().forEach { dismissed += key(it) }
+        logged.clear()
+        runCatching { android.webkit.CookieManager.getInstance().removeAllCookies(null) }
+    }
+
     fun cookies(): List<Cookie> {
         val result = LinkedHashMap<String, Cookie>()
         logged.forEach { put(result, it) }
@@ -72,7 +94,7 @@ internal object CookieBrowser {
                 .values
                 .forEach { header -> parseSetCookie(header, tx.host)?.let { put(result, it) } }
         }
-        return result.values.toList()
+        return result.values.filterNot { key(it) in dismissed }
     }
 
     private fun parseSetCookie(header: String, host: String): Cookie? {
