@@ -10,8 +10,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.SettingsBackupRestore
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Slider
@@ -24,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.scizor.ui.SectionHeader
 import com.scizor.ui.SegmentedColumn
+import com.scizor.ui.rememberTopBarAction
 import com.scizor.ui.scizorSegmentedColors
 
 @Composable
@@ -31,6 +33,8 @@ internal fun AppearanceScreen() {
     val mode by AppearanceOverrides.mode.collectAsStateWithLifecycle()
     val fontScale by AppearanceOverrides.fontScale.collectAsStateWithLifecycle()
     val highContrast by AppearanceOverrides.highContrast.collectAsStateWithLifecycle()
+
+    rememberTopBarAction(Icons.Filled.SettingsBackupRestore, "Reset to defaults") { AppearanceOverrides.reset() }
 
     Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
         SectionHeader("Theme")
@@ -82,11 +86,6 @@ internal fun AppearanceScreen() {
                 content = { Text("High contrast") },
             )
         }
-
-        OutlinedButton(
-            onClick = { AppearanceOverrides.reset() },
-            modifier = Modifier.padding(16.dp),
-        ) { Text("Reset to defaults") }
 
         Text(
             "Light/dark forcing uses Android 12+ per-app night mode.",
