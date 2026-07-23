@@ -207,6 +207,26 @@ Scizor.deepLinkPresets = listOf(
 )
 ```
 
+### Custom Databases
+
+The Database Browser lists the app's SQLite files automatically. To browse a
+non-SQLite store (Realm, an in-memory cache, a remote snapshot) alongside them,
+register a read-only adapter:
+
+```kotlin
+Scizor.databaseAdapters = listOf(
+    object : ScizorDatabaseAdapter {
+        override val name = "Realm"
+        override val tables = listOf("User", "Session")
+        override fun columns(table: String) = listOf("id", "name")
+        override fun count(table: String) = realm.count(table)
+        override fun rows(table: String, limit: Int, offset: Int) = realm.page(table, limit, offset)
+    },
+)
+```
+
+Adapter-backed databases appear under **Custom databases** and are read-only.
+
 The tester's QR scanner appears automatically when the optional
 `com.google.android.gms:play-services-code-scanner` dependency is on the classpath
 (add it via `debugImplementation`).
@@ -255,6 +275,7 @@ still resolve to their registered defaults, so any host logic that reads them ke
 | `Scizor.environmentVariables` | Read-only key/value display |
 | `Scizor.interfacePreviews` | Host Composables to preview (name + optional description) |
 | `Scizor.deepLinkPresets` | One-tap deep links for the tester |
+| `Scizor.databaseAdapters` | Read-only custom database sources for the browser |
 | `Scizor.wrapAppearance(base)` | Apply the appearance font-scale override in `attachBaseContext` |
 
 ## License

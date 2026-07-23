@@ -27,6 +27,8 @@ object Scizor {
 
     var deepLinkPresets: List<com.scizor.feature.deeplink.DeepLinkPreset> = emptyList()
 
+    var databaseAdapters: List<com.scizor.feature.databasebrowser.ScizorDatabaseAdapter> = emptyList()
+
     val network: NetworkLogger get() = NetworkLogger
 
     val featureFlags: FeatureFlags get() = FeatureFlags

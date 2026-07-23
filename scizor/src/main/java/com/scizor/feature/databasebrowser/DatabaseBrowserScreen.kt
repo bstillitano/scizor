@@ -65,23 +65,147 @@ internal fun DatabaseBrowserScreen(navigator: ScizorNavigator) {
     val context = LocalContext.current
     val query = rememberSearchQuery("Search databases")
     val all = remember { DatabaseBrowser.databases(context) }
+    val adapters = remember { com.scizor.Scizor.databaseAdapters }
 
-    if (all.isEmpty()) {
+    if (all.isEmpty() && adapters.isEmpty()) {
         EmptyState("No SQLite databases found in this app.")
         return
     }
     val databases = all.filter { query.isBlank() || it.name.contains(query, true) }
+    val customDbs = adapters.filter { query.isBlank() || it.name.contains(query, true) }
     Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-        SectionHeader("Databases")
-        SegmentedColumn(items = databases) { db, shapes ->
+        if (databases.isNotEmpty()) {
+            SectionHeader("SQLite databases")
+            SegmentedColumn(items = databases) { db, shapes ->
+                SegmentedListItem(
+                    shapes = shapes,
+                    colors = scizorSegmentedColors(),
+                    leadingContent = { Icon(Icons.Filled.Storage, null, tint = MaterialTheme.colorScheme.primary) },
+                    supportingContent = { Text(formatBytes(db.sizeBytes)) },
+                    trailingContent = { Chevron() },
+                    modifier = Modifier.clickable { navigator.push(db.name) { TablesScreen(db.name, navigator) } },
+                    content = { Text(db.name) },
+                )
+            }
+        }
+        if (customDbs.isNotEmpty()) {
+            SectionHeader("Custom databases")
+            SegmentedColumn(items = customDbs) { adapter, shapes ->
+                SegmentedListItem(
+                    shapes = shapes,
+                    colors = scizorSegmentedColors(),
+                    leadingContent = { Icon(Icons.Filled.Storage, null, tint = MaterialTheme.colorScheme.primary) },
+                    supportingContent = { Text("${adapter.tables.size} tables · custom") },
+                    trailingContent = { Chevron() },
+                    modifier = Modifier.clickable {
+                        navigator.push(adapter.name) { AdapterTablesScreen(adapter, navigator) }
+                    },
+                    content = { Text(adapter.name) },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun AdapterTablesScreen(adapter: ScizorDatabaseAdapter, navigator: ScizorNavigator) {
+    val query = rememberSearchQuery("Search tables")
+    val tables = adapter.tables.filter { query.isBlank() || it.contains(query, true) }
+    Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+        if (tables.isEmpty()) {
+            EmptyState("No tables.")
+            return@Column
+        }
+        SectionHeader("Tables")
+        SegmentedColumn(items = tables) { table, shapes ->
+            val count = remember(table) { runCatching { adapter.count(table) }.getOrDefault(0) }
             SegmentedListItem(
                 shapes = shapes,
                 colors = scizorSegmentedColors(),
-                leadingContent = { Icon(Icons.Filled.Storage, null, tint = MaterialTheme.colorScheme.primary) },
-                supportingContent = { Text(formatBytes(db.sizeBytes)) },
+                leadingContent = { Icon(Icons.Filled.TableChart, null, tint = MaterialTheme.colorScheme.primary) },
+                supportingContent = { Text("$count rows") },
                 trailingContent = { Chevron() },
-                modifier = Modifier.clickable { navigator.push(db.name) { TablesScreen(db.name, navigator) } },
-                content = { Text(db.name) },
+                modifier = Modifier.clickable {
+                    navigator.push(table) { AdapterTableDataScreen(adapter, table, navigator) }
+                },
+                content = { Text(table) },
+            )
+        }
+    }
+}
+
+@Composable
+private fun AdapterTableDataScreen(adapter: ScizorDatabaseAdapter, table: String, navigator: ScizorNavigator) {
+    var offset by remember { mutableIntStateOf(0) }
+    val query = rememberSearchQuery("Filter this page")
+    val total = remember(table) { runCatching { adapter.count(table) }.getOrDefault(0) }
+    val columns = remember(table) { runCatching { adapter.columns(table) }.getOrDefault(emptyList()) }
+    val rows = remember(table, offset) {
+        runCatching { adapter.rows(table, PAGE_SIZE, offset) }.getOrDefault(emptyList())
+    }
+
+    Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+        val shown = if (query.isBlank()) rows else rows.filter { row -> row.any { it.contains(query, true) } }
+        val end = (offset + rows.size).coerceAtMost(total)
+        SectionHeader(if (total == 0) "No records" else "Records ${offset + 1}–$end of $total")
+        if (shown.isEmpty()) {
+            EmptyState(if (total == 0) "This table is empty." else "No rows match on this page.")
+        } else {
+            SegmentedColumn(items = shown) { row, shapes ->
+                val first = columns.firstOrNull()?.let { "$it: ${row.firstOrNull().orEmpty()}" } ?: "—"
+                val rest = columns.drop(1).take(2)
+                    .mapIndexed { i, col -> "$col: ${row.getOrElse(i + 1) { "" }}" }
+                    .joinToString("   ·   ")
+                SegmentedListItem(
+                    shapes = shapes,
+                    colors = scizorSegmentedColors(),
+                    supportingContent = {
+                        if (rest.isNotBlank()) Text(rest, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    },
+                    trailingContent = { Chevron() },
+                    modifier = Modifier.clickable {
+                        navigator.push("Record") { AdapterRecordScreen(columns, row) }
+                    },
+                    content = { Text(first, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                )
+            }
+        }
+        if (total > PAGE_SIZE) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                OutlinedButton(
+                    onClick = { offset = (offset - PAGE_SIZE).coerceAtLeast(0) },
+                    enabled = offset > 0,
+                    modifier = Modifier.weight(1f),
+                ) { Text("Previous") }
+                OutlinedButton(
+                    onClick = { offset += PAGE_SIZE },
+                    enabled = offset + PAGE_SIZE < total,
+                    modifier = Modifier.weight(1f),
+                ) { Text("Next") }
+            }
+        }
+    }
+}
+
+@Composable
+private fun AdapterRecordScreen(columns: List<String>, row: List<String>) {
+    val clipboard = LocalClipboardManager.current
+    Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+        SectionHeader("Values")
+        val pairs = columns.mapIndexed { i, col -> col to row.getOrElse(i) { "" } }
+        SegmentedColumn(items = pairs) { (col, value), shapes ->
+            SegmentedListItem(
+                shapes = shapes,
+                colors = scizorSegmentedColors(),
+                supportingContent = { Text(value, style = MaterialTheme.typography.bodyMedium) },
+                modifier = Modifier.combinedClickable(
+                    onClick = {},
+                    onLongClick = { clipboard.setText(AnnotatedString("$col: $value")) },
+                ),
+                content = { Text(col, color = MaterialTheme.colorScheme.primary) },
             )
         }
     }

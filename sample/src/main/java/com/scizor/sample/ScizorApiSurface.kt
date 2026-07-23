@@ -52,6 +52,15 @@ internal fun scizorApiSurface(application: Application) {
     Scizor.deepLinkPresets = listOf(
         com.scizor.feature.deeplink.DeepLinkPreset(name = "n", url = "app://x"),
     )
+    Scizor.databaseAdapters = listOf(
+        object : com.scizor.feature.databasebrowser.ScizorDatabaseAdapter {
+            override val name: String = "n"
+            override val tables: List<String> = listOf("t")
+            override fun columns(table: String): List<String> = listOf("c")
+            override fun count(table: String): Int = 0
+            override fun rows(table: String, limit: Int, offset: Int): List<List<String>> = emptyList()
+        },
+    )
     val network: NetworkLogger = Scizor.network
     val flags: FeatureFlags = Scizor.featureFlags
     val servers: ServerConfiguration = Scizor.servers

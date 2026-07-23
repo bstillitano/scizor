@@ -65,6 +65,9 @@ object Scizor {
     /** One-tap deep link presets shown in the Deep Link Tester. */
     var deepLinkPresets: List<com.scizor.feature.deeplink.DeepLinkPreset> = emptyList()
 
+    /** Host-provided custom database sources shown in the Database Browser. */
+    var databaseAdapters: List<com.scizor.feature.databasebrowser.ScizorDatabaseAdapter> = emptyList()
+
     /** HTTP traffic logger. Add [NetworkLogger.interceptor] to your OkHttpClient. */
     val network: NetworkLogger get() = NetworkLogger
 
