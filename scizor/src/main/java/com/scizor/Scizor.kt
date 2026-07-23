@@ -101,6 +101,7 @@ object Scizor {
         CrashLogger.install(application)
         InterfaceToolkit.init(store)
         OverlayController.install(application)
+        com.scizor.core.FloatingButtonController.install(application)
         AppearanceOverrides.init(application, store)
         applyInvocationGesture(application)
     }
@@ -130,5 +131,6 @@ object Scizor {
         if (invocationGesture == ScizorGesture.SHAKE) {
             shakeDetector = ShakeDetector(onShake = { show() }).also { it.start(context) }
         }
+        com.scizor.core.FloatingButtonController.setEnabled(invocationGesture == ScizorGesture.FLOATING_BUTTON)
     }
 }

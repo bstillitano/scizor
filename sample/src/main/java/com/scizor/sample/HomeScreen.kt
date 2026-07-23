@@ -41,7 +41,7 @@ fun HomeScreen() {
                 "Scizor Demo",
                 rows = listOf(
                     SampleRow.Action("Open Scizor menu") { Scizor.show() },
-                    SampleRow.Info("Or shake the device to open the menu"),
+                    SampleRow.Info("Or tap the floating 🐞 button (shake also works on a device)"),
                 ),
             )
         }

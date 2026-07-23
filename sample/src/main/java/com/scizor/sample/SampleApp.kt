@@ -13,6 +13,9 @@ class SampleApp : Application() {
     override fun onCreate() {
         super.onCreate()
         Scizor.start(this)
+        // A tap-to-open floating button is the easiest trigger on an emulator (shaking
+        // a virtual device is awkward); on a real device SHAKE works well too.
+        Scizor.invocationGesture = com.scizor.ScizorGesture.FLOATING_BUTTON
 
         listOf(
             "dark_mode_v2" to true,
