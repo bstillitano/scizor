@@ -29,6 +29,9 @@ internal class ScizorOverlayView(context: Context) : View(context) {
     /** Fading marks left behind when a pointer lifts. */
     private val trails = ArrayDeque<Touch>()
 
+    /** When each active pointer went down, for the touch-duration readout. */
+    private val pointerDownAt = HashMap<Int, Long>()
+
     /**
      * The foreground activity's decor view, used to draw view frames/sizes. Since
      * this overlay lives in its own full-screen system window, everything is drawn
@@ -113,7 +116,9 @@ internal class ScizorOverlayView(context: Context) : View(context) {
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN, MotionEvent.ACTION_POINTER_DOWN -> {
                 val i = event.actionIndex
-                activePointers[event.getPointerId(i)] = PointF(x(i), y(i))
+                val id = event.getPointerId(i)
+                activePointers[id] = PointF(x(i), y(i))
+                pointerDownAt[id] = now
                 InterfaceToolkit.logTouch(x(i), y(i))
             }
             MotionEvent.ACTION_MOVE -> {
@@ -123,12 +128,14 @@ internal class ScizorOverlayView(context: Context) : View(context) {
                 }
             }
             MotionEvent.ACTION_UP, MotionEvent.ACTION_POINTER_UP -> {
-                activePointers.remove(event.getPointerId(event.actionIndex))
-                    ?.let { trails.addLast(Touch(it.x, it.y, now)) }
+                val id = event.getPointerId(event.actionIndex)
+                activePointers.remove(id)?.let { trails.addLast(Touch(it.x, it.y, now)) }
+                pointerDownAt.remove(id)
             }
             MotionEvent.ACTION_CANCEL -> {
                 activePointers.values.forEach { trails.addLast(Touch(it.x, it.y, now)) }
                 activePointers.clear()
+                pointerDownAt.clear()
             }
         }
         invalidate()
@@ -143,7 +150,12 @@ internal class ScizorOverlayView(context: Context) : View(context) {
 
     private fun drawGrid(canvas: Canvas) {
         val alpha = (InterfaceToolkit.gridOpacity.value * 255 / 100).coerceIn(0, 255)
-        gridPaint.color = (alpha shl 24)
+        val rgb = when (InterfaceToolkit.gridColor.value) {
+            InterfaceToolkit.GridColor.RED -> 0xFF5252
+            InterfaceToolkit.GridColor.GREEN -> 0x00E676
+            InterfaceToolkit.GridColor.BLUE -> 0x40C4FF
+        }
+        gridPaint.color = (alpha shl 24) or rgb
         val step = InterfaceToolkit.gridSizeDp.value * density
         var x = step
         while (x < width) {
@@ -215,37 +227,43 @@ internal class ScizorOverlayView(context: Context) : View(context) {
     }
 
     private fun drawTouches(canvas: Canvas) {
-        val fadeMs = InterfaceToolkit.touchFadeMs.value.toLong().coerceAtLeast(1)
-        val radius = InterfaceToolkit.touchRadiusDp.value * density
+        val showRadius = InterfaceToolkit.showTouchRadius.value
+        val showDuration = InterfaceToolkit.showTouchDuration.value
+        val base = 14f * density
+        val fadeMs = 500L
         val now = System.currentTimeMillis()
 
-        // Fading marks for lifted fingers (expand + fade out).
+        // Fading marks for lifted fingers.
         while (trails.isNotEmpty() && now - trails.first().at > fadeMs) trails.removeFirst()
         trails.forEach { t ->
             val progress = (now - t.at) / fadeMs.toFloat()
             val alpha = (150 * (1f - progress)).toInt().coerceIn(0, 255)
             touchPaint.color = (alpha shl 24) or TOUCH_RGB
-            canvas.drawCircle(t.x, t.y, radius * (1f + progress), touchPaint)
+            canvas.drawCircle(t.x, t.y, base * (1f + progress), touchPaint)
         }
 
-        // Active fingers: a solid spot with a ring and crosshair, exactly under each pointer.
-        activePointers.values.forEach { p ->
+        // Active fingers: a small spot that follows the finger, with optional radius + duration.
+        activePointers.forEach { (id, p) ->
             touchPaint.color = (0x66 shl 24) or TOUCH_RGB
-            canvas.drawCircle(p.x, p.y, radius, touchPaint)
+            canvas.drawCircle(p.x, p.y, base, touchPaint)
             touchRingPaint.color = (0xFF shl 24) or TOUCH_RGB
-            canvas.drawCircle(p.x, p.y, radius, touchRingPaint)
-            canvas.drawLine(p.x - radius, p.y, p.x + radius, p.y, touchRingPaint)
-            canvas.drawLine(p.x, p.y - radius, p.x, p.y + radius, touchRingPaint)
+            canvas.drawCircle(p.x, p.y, base, touchRingPaint)
+            if (showRadius) canvas.drawCircle(p.x, p.y, base * 2.4f, touchRingPaint)
+            if (showDuration) {
+                val held = now - (pointerDownAt[id] ?: now)
+                fpsText.color = (0xFF shl 24) or TOUCH_RGB
+                canvas.drawText("$held ms", p.x + base * 2.6f, p.y + fpsText.textSize / 3f, fpsText)
+            }
         }
     }
 
     private fun drawFps(canvas: Canvas) {
-        val averaged = InterfaceToolkit.fpsAveraged.value
-        val value = if (averaged && fpsHistory.isNotEmpty()) fpsHistory.average().toInt() else currentFps
+        val value = currentFps
+        InterfaceToolkit.reportFps(value)
         val label = "FPS: $value"
         fpsText.color = when {
-            value <= InterfaceToolkit.fpsCritical.value -> 0xFFFF5252.toInt()
-            value <= InterfaceToolkit.fpsWarn.value -> 0xFFFFC107.toInt()
+            value < FPS_POOR -> 0xFFFF5252.toInt()
+            value < FPS_GOOD -> 0xFFFFC107.toInt()
             else -> 0xFF69F0AE.toInt()
         }
         val pad = 8f * density
@@ -266,5 +284,9 @@ internal class ScizorOverlayView(context: Context) : View(context) {
     private companion object {
         /** Pink RGB for touch markers; alpha is applied per-draw. */
         const val TOUCH_RGB = 0xFF4081
+
+        /** Fixed FPS colour thresholds, matching Scyther: <30 poor, 30–54 acceptable, 55+ good. */
+        const val FPS_POOR = 30
+        const val FPS_GOOD = 55
     }
 }

@@ -16,6 +16,9 @@ internal object InterfaceToolkit {
     /** Where the FPS counter is anchored. */
     enum class Corner { TOP_LEFT, TOP_RIGHT, BOTTOM_LEFT, BOTTOM_RIGHT }
 
+    /** Grid line colour. */
+    enum class GridColor { RED, GREEN, BLUE }
+
     private var store: ScizorStore? = null
 
     // On/off toggles
@@ -36,25 +39,25 @@ internal object InterfaceToolkit {
     // Grid settings
     private val _gridSizeDp = MutableStateFlow(8)
     private val _gridOpacity = MutableStateFlow(13) // percent
+    private val _gridColor = MutableStateFlow(GridColor.RED)
     val gridSizeDp: StateFlow<Int> = _gridSizeDp
     val gridOpacity: StateFlow<Int> = _gridOpacity
+    val gridColor: StateFlow<GridColor> = _gridColor
 
     // FPS settings
     private val _fpsCorner = MutableStateFlow(Corner.TOP_LEFT)
-    private val _fpsWarn = MutableStateFlow(45)
-    private val _fpsCritical = MutableStateFlow(30)
-    private val _fpsAveraged = MutableStateFlow(true)
+    private val _currentFps = MutableStateFlow(0)
     val fpsCorner: StateFlow<Corner> = _fpsCorner
-    val fpsWarn: StateFlow<Int> = _fpsWarn
-    val fpsCritical: StateFlow<Int> = _fpsCritical
-    val fpsAveraged: StateFlow<Boolean> = _fpsAveraged
 
-    // Touch settings
-    private val _touchRadiusDp = MutableStateFlow(12)
-    private val _touchFadeMs = MutableStateFlow(800)
+    /** The live frame rate, published by the overlay for the settings status readout. */
+    val currentFps: StateFlow<Int> = _currentFps
+
+    // Touch settings — toggles, matching Scyther.
+    private val _showTouchDuration = MutableStateFlow(false)
+    private val _showTouchRadius = MutableStateFlow(true)
     private val _touchLogging = MutableStateFlow(false)
-    val touchRadiusDp: StateFlow<Int> = _touchRadiusDp
-    val touchFadeMs: StateFlow<Int> = _touchFadeMs
+    val showTouchDuration: StateFlow<Boolean> = _showTouchDuration
+    val showTouchRadius: StateFlow<Boolean> = _showTouchRadius
     val touchLogging: StateFlow<Boolean> = _touchLogging
 
     private val _touchLog = MutableStateFlow<List<String>>(emptyList())
@@ -73,12 +76,10 @@ internal object InterfaceToolkit {
         _slowAnimations.value = store.boolean("ui_slow", false)
         _gridSizeDp.value = int("ui_grid_size", 8)
         _gridOpacity.value = int("ui_grid_opacity", 13)
+        _gridColor.value = GridColor.entries.getOrElse(int("ui_grid_color", 0)) { GridColor.RED }
         _fpsCorner.value = Corner.entries.getOrElse(int("ui_fps_corner", 0)) { Corner.TOP_LEFT }
-        _fpsWarn.value = int("ui_fps_warn", 45)
-        _fpsCritical.value = int("ui_fps_critical", 30)
-        _fpsAveraged.value = store.boolean("ui_fps_avg", true)
-        _touchRadiusDp.value = int("ui_touch_radius", 12)
-        _touchFadeMs.value = int("ui_touch_fade", 800)
+        _showTouchDuration.value = store.boolean("ui_touch_duration", false)
+        _showTouchRadius.value = store.boolean("ui_touch_radius_on", true)
         _touchLogging.value = store.boolean("ui_touch_log", false)
         applySlowAnimations(_slowAnimations.value)
     }
@@ -94,17 +95,24 @@ internal object InterfaceToolkit {
         applySlowAnimations(value)
     }
 
-    fun setGridSizeDp(value: Int) = updateInt(_gridSizeDp, "ui_grid_size", value.coerceIn(2, 32))
+    fun setGridSizeDp(value: Int) = updateInt(_gridSizeDp, "ui_grid_size", value.coerceIn(2, 100))
     fun setGridOpacity(value: Int) = updateInt(_gridOpacity, "ui_grid_opacity", value.coerceIn(2, 100))
+    fun setGridColor(value: GridColor) {
+        _gridColor.value = value
+        store?.putString("ui_grid_color", value.ordinal.toString())
+    }
     fun setFpsCorner(value: Corner) {
         _fpsCorner.value = value
         store?.putString("ui_fps_corner", value.ordinal.toString())
     }
-    fun setFpsWarn(value: Int) = updateInt(_fpsWarn, "ui_fps_warn", value.coerceIn(1, 120))
-    fun setFpsCritical(value: Int) = updateInt(_fpsCritical, "ui_fps_critical", value.coerceIn(1, 120))
-    fun setFpsAveraged(value: Boolean) = update(_fpsAveraged, "ui_fps_avg", value)
-    fun setTouchRadiusDp(value: Int) = updateInt(_touchRadiusDp, "ui_touch_radius", value.coerceIn(4, 48))
-    fun setTouchFadeMs(value: Int) = updateInt(_touchFadeMs, "ui_touch_fade", value.coerceIn(200, 3000))
+
+    /** Publishes the current frame rate from the overlay. */
+    fun reportFps(fps: Int) {
+        if (_currentFps.value != fps) _currentFps.value = fps
+    }
+
+    fun setShowTouchDuration(value: Boolean) = update(_showTouchDuration, "ui_touch_duration", value)
+    fun setShowTouchRadius(value: Boolean) = update(_showTouchRadius, "ui_touch_radius_on", value)
     fun setTouchLogging(value: Boolean) = update(_touchLogging, "ui_touch_log", value)
 
     /** Called by the overlay when a touch is captured and logging is enabled. */

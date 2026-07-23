@@ -5,15 +5,20 @@ package com.scizor.feature.interfacetools
 import android.content.Context
 import android.content.Intent
 import android.provider.Settings
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.FilterChip
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Circle
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Slider
@@ -23,6 +28,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
@@ -30,6 +36,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.scizor.ui.SectionHeader
 import com.scizor.ui.SegmentedColumn
 import com.scizor.ui.scizorSegmentedColors
+
+private val FpsGood = Color(0xFF2E7D32)
+private val FpsOk = Color(0xFFE0932F)
+private val FpsPoor = Color(0xFFD23B3B)
 
 /** Overlays live in a system window, so enabling one needs "Display over other apps". */
 private fun overlayToggle(context: Context, setter: (Boolean) -> Unit): (Boolean) -> Unit = { on ->
@@ -58,6 +68,33 @@ private fun MasterToggle(label: String, subtitle: String, checked: Boolean, onCh
 }
 
 @Composable
+private fun <T> Chooser(options: List<T>, selected: T, label: (T) -> String, onSelect: (T) -> Unit) {
+    SegmentedColumn(items = options) { option, shapes ->
+        SegmentedListItem(
+            shapes = shapes,
+            colors = scizorSegmentedColors(),
+            trailingContent = {
+                if (option == selected) {
+                    Icon(Icons.Filled.Check, contentDescription = "Selected", tint = MaterialTheme.colorScheme.primary)
+                }
+            },
+            modifier = Modifier.clickable { onSelect(option) },
+            content = { Text(label(option)) },
+        )
+    }
+}
+
+@Composable
+private fun ToggleRow(label: String, checked: Boolean, onChange: (Boolean) -> Unit, shapes: androidx.compose.material3.ListItemShapes) {
+    SegmentedListItem(
+        shapes = shapes,
+        colors = scizorSegmentedColors(),
+        trailingContent = { Switch(checked = checked, onCheckedChange = onChange) },
+        content = { Text(label) },
+    )
+}
+
+@Composable
 private fun OverlayNote() {
     Text(
         "Overlays draw over everything on screen, including the Scizor menu and system bars.",
@@ -73,14 +110,24 @@ internal fun GridOverlayScreen() {
     val enabled by InterfaceToolkit.grid.collectAsStateWithLifecycle()
     val size by InterfaceToolkit.gridSizeDp.collectAsStateWithLifecycle()
     val opacity by InterfaceToolkit.gridOpacity.collectAsStateWithLifecycle()
+    val color by InterfaceToolkit.gridColor.collectAsStateWithLifecycle()
 
     Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
         SectionHeader("Grid overlay")
-        MasterToggle("Show grid", "A spacing grid over your UI", enabled, overlayToggle(context, InterfaceToolkit::setGrid))
-        SectionHeader("Settings")
-        Column(modifier = Modifier.padding(16.dp)) {
-            SliderRow("Grid size", "$size dp", size.toFloat(), 2f..32f) { InterfaceToolkit.setGridSizeDp(it.toInt()) }
-            SliderRow("Opacity", "$opacity%", opacity.toFloat(), 2f..100f) { InterfaceToolkit.setGridOpacity(it.toInt()) }
+        MasterToggle("Enable grid", "A spacing grid over your UI", enabled, overlayToggle(context, InterfaceToolkit::setGrid))
+        if (enabled) {
+            SectionHeader("Grid options")
+            Column(modifier = Modifier.padding(16.dp)) {
+                SliderRow("Grid size", "$size dp", size.toFloat(), 1f..100f) { InterfaceToolkit.setGridSizeDp(it.toInt()) }
+                SliderRow("Opacity", "$opacity%", opacity.toFloat(), 1f..100f) { InterfaceToolkit.setGridOpacity(it.toInt()) }
+            }
+            SectionHeader("Grid color")
+            Chooser(
+                options = InterfaceToolkit.GridColor.entries,
+                selected = color,
+                label = { it.name.lowercase().replaceFirstChar(Char::uppercase) },
+                onSelect = InterfaceToolkit::setGridColor,
+            )
         }
         OverlayNote()
     }
@@ -91,41 +138,44 @@ internal fun FpsCounterScreen() {
     val context = LocalContext.current
     val enabled by InterfaceToolkit.fps.collectAsStateWithLifecycle()
     val corner by InterfaceToolkit.fpsCorner.collectAsStateWithLifecycle()
-    val warn by InterfaceToolkit.fpsWarn.collectAsStateWithLifecycle()
-    val critical by InterfaceToolkit.fpsCritical.collectAsStateWithLifecycle()
-    val averaged by InterfaceToolkit.fpsAveraged.collectAsStateWithLifecycle()
+    val current by InterfaceToolkit.currentFps.collectAsStateWithLifecycle()
 
     Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
         SectionHeader("FPS counter")
-        MasterToggle("Show FPS", "A frame-rate meter overlay", enabled, overlayToggle(context, InterfaceToolkit::setFps))
-        SectionHeader("Position")
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            InterfaceToolkit.Corner.entries.forEach { c ->
-                FilterChip(
-                    selected = corner == c,
-                    onClick = { InterfaceToolkit.setFpsCorner(c) },
-                    label = { Text(c.shortLabel()) },
+        MasterToggle(
+            "Enable FPS counter",
+            "A real-time frame-rate indicator",
+            enabled,
+            overlayToggle(context, InterfaceToolkit::setFps),
+        )
+        if (enabled) {
+            SectionHeader("Position")
+            Chooser(
+                options = InterfaceToolkit.Corner.entries,
+                selected = corner,
+                label = { it.displayName() },
+                onSelect = InterfaceToolkit::setFpsCorner,
+            )
+            SectionHeader("Status")
+            SegmentedColumn(items = listOf("fps")) { _, shapes ->
+                SegmentedListItem(
+                    shapes = shapes,
+                    colors = scizorSegmentedColors(),
+                    trailingContent = {
+                        Text(
+                            "$current",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = fpsColor(current),
+                        )
+                    },
+                    content = { Text("Current FPS") },
                 )
             }
-        }
-        SectionHeader("Thresholds")
-        Column(modifier = Modifier.padding(16.dp)) {
-            SliderRow("Warning below", "$warn fps", warn.toFloat(), 1f..120f) { InterfaceToolkit.setFpsWarn(it.toInt()) }
-            SliderRow("Critical below", "$critical fps", critical.toFloat(), 1f..120f) {
-                InterfaceToolkit.setFpsCritical(it.toInt())
+            Column(modifier = Modifier.padding(horizontal = 28.dp, vertical = 8.dp)) {
+                Legend(FpsGood, "55+ FPS · Excellent")
+                Legend(FpsOk, "30–54 FPS · Acceptable")
+                Legend(FpsPoor, "Below 30 FPS · Poor")
             }
-        }
-        SegmentedColumn(items = listOf("avg")) { _, shapes ->
-            SegmentedListItem(
-                shapes = shapes,
-                colors = scizorSegmentedColors(),
-                supportingContent = { Text("Show a 60-frame rolling average") },
-                trailingContent = { Switch(checked = averaged, onCheckedChange = InterfaceToolkit::setFpsAveraged) },
-                content = { Text("Averaged") },
-            )
         }
         OverlayNote()
     }
@@ -135,49 +185,55 @@ internal fun FpsCounterScreen() {
 internal fun TouchVisualiserScreen() {
     val context = LocalContext.current
     val enabled by InterfaceToolkit.touches.collectAsStateWithLifecycle()
-    val radius by InterfaceToolkit.touchRadiusDp.collectAsStateWithLifecycle()
-    val fade by InterfaceToolkit.touchFadeMs.collectAsStateWithLifecycle()
+    val duration by InterfaceToolkit.showTouchDuration.collectAsStateWithLifecycle()
+    val showRadius by InterfaceToolkit.showTouchRadius.collectAsStateWithLifecycle()
     val logging by InterfaceToolkit.touchLogging.collectAsStateWithLifecycle()
     val log by InterfaceToolkit.touchLog.collectAsStateWithLifecycle()
 
     Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
         SectionHeader("Touch visualiser")
         MasterToggle(
-            "Show touches",
+            "Show screen touches",
             "Marks every touch and follows drags",
             enabled,
             overlayToggle(context, InterfaceToolkit::setTouches),
         )
-        SectionHeader("Settings")
-        Column(modifier = Modifier.padding(16.dp)) {
-            SliderRow("Touch radius", "$radius dp", radius.toFloat(), 4f..48f) {
-                InterfaceToolkit.setTouchRadiusDp(it.toInt())
-            }
-            SliderRow("Fade duration", "$fade ms", fade.toFloat(), 200f..3000f) {
-                InterfaceToolkit.setTouchFadeMs(it.toInt())
-            }
-        }
-        SegmentedColumn(items = listOf("log")) { _, shapes ->
-            SegmentedListItem(
-                shapes = shapes,
-                colors = scizorSegmentedColors(),
-                supportingContent = { Text("Record touch coordinates below") },
-                trailingContent = { Switch(checked = logging, onCheckedChange = InterfaceToolkit::setTouchLogging) },
-                content = { Text("Log touches") },
-            )
-        }
-        if (log.isNotEmpty()) {
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                TextButton(onClick = { InterfaceToolkit.clearTouchLog() }) {
-                    Text("Clear", color = MaterialTheme.colorScheme.error)
+        if (enabled) {
+            SectionHeader("Options")
+            val rows = listOf("duration", "radius", "log")
+            SegmentedColumn(items = rows) { row, shapes ->
+                when (row) {
+                    "duration" -> ToggleRow("Show touch duration", duration, InterfaceToolkit::setShowTouchDuration, shapes)
+                    "radius" -> ToggleRow("Show touch radius", showRadius, InterfaceToolkit::setShowTouchRadius, shapes)
+                    else -> ToggleRow("Log screen touches", logging, InterfaceToolkit::setTouchLogging, shapes)
                 }
             }
-            SectionHeader("Touch log")
-            SegmentedColumn(items = log) { entry, shapes ->
-                SegmentedListItem(shapes = shapes, colors = scizorSegmentedColors(), content = { Text(entry) })
+            if (log.isNotEmpty()) {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                    TextButton(onClick = { InterfaceToolkit.clearTouchLog() }) {
+                        Text("Clear", color = MaterialTheme.colorScheme.error)
+                    }
+                }
+                SectionHeader("Touch log")
+                SegmentedColumn(items = log) { entry, shapes ->
+                    SegmentedListItem(shapes = shapes, colors = scizorSegmentedColors(), content = { Text(entry) })
+                }
             }
         }
         OverlayNote()
+    }
+}
+
+@Composable
+private fun Legend(color: Color, text: String) {
+    Row(modifier = Modifier.padding(vertical = 3.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+        Icon(Icons.Filled.Circle, contentDescription = null, tint = color, modifier = Modifier.size(10.dp))
+        Text(
+            text,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(start = 8.dp),
+        )
     }
 }
 
@@ -198,9 +254,15 @@ private fun SliderRow(
     }
 }
 
-private fun InterfaceToolkit.Corner.shortLabel(): String = when (this) {
-    InterfaceToolkit.Corner.TOP_LEFT -> "TL"
-    InterfaceToolkit.Corner.TOP_RIGHT -> "TR"
-    InterfaceToolkit.Corner.BOTTOM_LEFT -> "BL"
-    InterfaceToolkit.Corner.BOTTOM_RIGHT -> "BR"
+private fun fpsColor(fps: Int): Color = when {
+    fps >= 55 -> FpsGood
+    fps >= 30 -> FpsOk
+    else -> FpsPoor
+}
+
+private fun InterfaceToolkit.Corner.displayName(): String = when (this) {
+    InterfaceToolkit.Corner.TOP_LEFT -> "Top Left"
+    InterfaceToolkit.Corner.TOP_RIGHT -> "Top Right"
+    InterfaceToolkit.Corner.BOTTOM_LEFT -> "Bottom Left"
+    InterfaceToolkit.Corner.BOTTOM_RIGHT -> "Bottom Right"
 }
