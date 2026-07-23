@@ -32,8 +32,10 @@ internal data class TestOptions(
 internal data class ScheduledNotification(
     val id: Int,
     val title: String,
+    val body: String,
     val fireAt: Long,
     val remaining: Int,
+    val repeats: Boolean,
 )
 
 /** Posts local test notifications so notification UI can be verified without a backend. */
@@ -61,7 +63,12 @@ internal object NotificationTester {
             return id
         }
         _scheduled.value = _scheduled.value + ScheduledNotification(
-            id, options.title.ifBlank { "Scizor test" }, System.currentTimeMillis() + delayMs, count,
+            id = id,
+            title = options.title.ifBlank { "Scizor test" },
+            body = options.body.ifBlank { "Test notification from Scizor" },
+            fireAt = System.currentTimeMillis() + delayMs,
+            remaining = count,
+            repeats = count > 1,
         )
         jobs[id] = scope.launch {
             if (delayMs > 0) delay(delayMs)
@@ -80,6 +87,13 @@ internal object NotificationTester {
     fun cancel(id: Int) {
         jobs.remove(id)?.cancel()
         _scheduled.value = _scheduled.value.filterNot { it.id == id }
+    }
+
+    /** Cancels every pending scheduled notification. */
+    fun cancelAll() {
+        jobs.values.forEach { it.cancel() }
+        jobs.clear()
+        _scheduled.value = emptyList()
     }
 
     fun hasPermission(context: Context): Boolean =

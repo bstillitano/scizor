@@ -144,12 +144,28 @@ internal fun NotificationTesterScreen() {
         }
 
         if (scheduled.isNotEmpty()) {
-            SectionHeader("Scheduled")
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(start = 28.dp, end = 16.dp, top = 24.dp, bottom = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    "Scheduled",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.weight(1f),
+                )
+                OutlinedButton(onClick = { NotificationTester.cancelAll() }) { Text("Cancel all") }
+            }
             SegmentedColumn(items = scheduled) { item, shapes ->
                 SegmentedListItem(
                     shapes = shapes,
                     colors = scizorSegmentedColors(),
-                    supportingContent = { Text("${item.remaining} remaining") },
+                    overlineContent = {
+                        val time = java.text.DateFormat.getTimeInstance(java.text.DateFormat.MEDIUM)
+                            .format(java.util.Date(item.fireAt))
+                        Text("Fires at $time" + if (item.repeats) "  ·  repeats (${item.remaining} left)" else "")
+                    },
+                    supportingContent = { Text(item.body, maxLines = 1) },
                     trailingContent = {
                         OutlinedButton(onClick = { NotificationTester.cancel(item.id) }) { Text("Cancel") }
                     },
