@@ -17,6 +17,17 @@
             android:configChanges="uiMode|orientation|screenSize|smallestScreenSize|screenLayout|keyboardHidden|density|fontScale"
             android:theme="@style/Theme.Scizor" />
 
+        <!-- Serves app-sandbox files to external viewers when sharing / opening from the File Browser. -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.scizor.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/scizor_file_paths" />
+        </provider>
+
         <service
             android:name="com.scizor.feature.notifications.ScizorNotificationListenerService"
             android:exported="false"

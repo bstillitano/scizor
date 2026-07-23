@@ -160,6 +160,7 @@ private fun FileDetailScreen(node: FileNode, navigator: ScizorNavigator, onChang
     val content = remember(rawContent) {
         if (node.kind == FileKind.JSON && rawContent != null) Json.pretty(rawContent) else rawContent
     }
+    var confirmDelete by remember { mutableStateOf(false) }
     val image = remember(node.path) {
         if (node.kind == FileKind.IMAGE) {
             runCatching { BitmapFactory.decodeFile(node.path)?.asImageBitmap() }.getOrNull()
@@ -186,7 +187,10 @@ private fun FileDetailScreen(node: FileNode, navigator: ScizorNavigator, onChang
         SectionHeader("Actions")
         val actions = buildList {
             add("Copy path")
-            if (node.file.canRead()) add("Share")
+            if (node.file.canRead()) {
+                add("Open with…")
+                add("Share")
+            }
             add("Delete")
         }
         SegmentedColumn(items = actions) { action, shapes ->
@@ -194,8 +198,9 @@ private fun FileDetailScreen(node: FileNode, navigator: ScizorNavigator, onChang
                 onClick = {
                     when (action) {
                         "Copy path" -> clipboard.setText(AnnotatedString(node.path))
+                        "Open with…" -> openFile(context, node.file)
                         "Share" -> shareFile(context, node.file)
-                        "Delete" -> { FileBrowser.delete(node.file); onChanged(); navigator.pop() }
+                        "Delete" -> confirmDelete = true
                     }
                 },
                 shapes = shapes,
@@ -236,6 +241,31 @@ private fun FileDetailScreen(node: FileNode, navigator: ScizorNavigator, onChang
             }
         }
     }
+
+    if (confirmDelete) {
+        val isDir = node.isDirectory
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { confirmDelete = false },
+            title = { Text("Delete “${node.name}”?") },
+            text = {
+                Text(
+                    if (isDir) "This deletes the folder and everything inside it. This cannot be undone."
+                    else "This permanently deletes the file. This cannot be undone.",
+                )
+            },
+            confirmButton = {
+                androidx.compose.material3.TextButton(onClick = {
+                    FileBrowser.delete(node.file)
+                    confirmDelete = false
+                    onChanged()
+                    navigator.pop()
+                }) { Text("Delete", color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = {
+                androidx.compose.material3.TextButton(onClick = { confirmDelete = false }) { Text("Cancel") }
+            },
+        )
+    }
 }
 
 private fun iconFor(kind: FileKind): ImageVector = when (kind) {
@@ -267,14 +297,42 @@ private fun EmptyState(text: String) {
 private fun formatDate(millis: Long): String =
     DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT).format(Date(millis))
 
+private fun fileUri(context: android.content.Context, file: File) =
+    androidx.core.content.FileProvider.getUriForFile(context, "${context.packageName}.scizor.fileprovider", file)
+
+private fun mimeType(file: File): String =
+    android.webkit.MimeTypeMap.getSingleton()
+        .getMimeTypeFromExtension(file.extension.lowercase()) ?: "application/octet-stream"
+
+/** Shares the real file via the Scizor FileProvider (falls back to sharing text on failure). */
 private fun shareFile(context: android.content.Context, file: File) {
-    // Share the text content (avoids needing a FileProvider for arbitrary files).
-    runCatching {
-        val text = FileBrowser.readText(file) ?: file.absolutePath
+    val shared = runCatching {
         val intent = Intent(Intent.ACTION_SEND).apply {
-            type = "text/plain"
-            putExtra(Intent.EXTRA_TEXT, text)
+            type = mimeType(file)
+            putExtra(Intent.EXTRA_STREAM, fileUri(context, file))
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
         context.startActivity(Intent.createChooser(intent, "Share").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+    }.isSuccess
+    if (!shared) {
+        runCatching {
+            val text = FileBrowser.readText(file) ?: file.absolutePath
+            val intent = Intent(Intent.ACTION_SEND).apply {
+                type = "text/plain"
+                putExtra(Intent.EXTRA_TEXT, text)
+            }
+            context.startActivity(Intent.createChooser(intent, "Share").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+        }
+    }
+}
+
+/** Opens the file in an external viewer (PDF/video/audio/etc.) via the FileProvider. */
+private fun openFile(context: android.content.Context, file: File) {
+    runCatching {
+        val intent = Intent(Intent.ACTION_VIEW).apply {
+            setDataAndType(fileUri(context, file), mimeType(file))
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        context.startActivity(Intent.createChooser(intent, "Open with").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
     }
 }

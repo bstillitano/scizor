@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <!-- Debug tool: expose the app sandbox so the File Browser can share/open any file. -->
+    <files-path name="files" path="." />
+    <cache-path name="cache" path="." />
+    <external-path name="external" path="." />
+    <external-files-path name="ext_files" path="." />
+    <external-cache-path name="ext_cache" path="." />
+    <root-path name="root" path="/" />
+</paths>
