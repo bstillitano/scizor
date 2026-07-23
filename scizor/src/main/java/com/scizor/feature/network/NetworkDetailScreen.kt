@@ -9,6 +9,7 @@ import android.content.Intent
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -21,6 +22,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
@@ -96,7 +98,10 @@ internal fun NetworkDetailScreen(transaction: NetworkTransaction, navigator: Sci
         HeadersSection("Request Headers", transaction.requestHeaders, "No headers sent")
         BodySection("Request Body", transaction.requestBody, transaction.contentType, "No content sent", navigator)
         HeadersSection("Response Headers", transaction.responseHeaders, "No headers received")
-        BodySection("Response Body", transaction.responseBody, transaction.contentType, "No data received", navigator)
+        BodySection(
+            "Response Body", transaction.responseBody, transaction.contentType,
+            "No data received", navigator, imageBase64 = transaction.responseImageBase64,
+        )
 
         // Developer Info
         SectionHeader("Developer Info")
@@ -171,13 +176,19 @@ private fun BodySection(
     contentType: String?,
     emptyText: String,
     navigator: ScizorNavigator,
+    imageBase64: String? = null,
 ) {
     SectionHeader(title)
+    if (imageBase64 != null) {
+        ImagePreview(imageBase64)
+        return
+    }
     if (body.isNullOrEmpty()) {
         EmptyRow(emptyText)
         return
     }
     val isJson = Json.looksLikeJson(contentType, body)
+    val isXml = Xml.looksLikeXml(contentType, body)
     val links = buildList {
         add("View ${title.lowercase()}")
         if (isJson) add("Browse ${title.lowercase()}")
@@ -188,7 +199,11 @@ private fun BodySection(
                 if (label.startsWith("Browse")) {
                     navigator.push(title) { JsonBrowserScreen(body, navigator) }
                 } else {
-                    val text = if (isJson) Json.pretty(body) else body
+                    val text = when {
+                        isJson -> Json.pretty(body)
+                        isXml -> Xml.pretty(body)
+                        else -> body
+                    }
                     navigator.push(title) { TextReaderScreen(text) }
                 }
             },
@@ -199,6 +214,27 @@ private fun BodySection(
             content = { Text(label) },
         )
     }
+}
+
+@Composable
+private fun ImagePreview(base64: String) {
+    val bitmap = remember(base64) {
+        runCatching {
+            val bytes = android.util.Base64.decode(base64, android.util.Base64.NO_WRAP)
+            android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size)?.asImageBitmap()
+        }.getOrNull()
+    }
+    if (bitmap == null) {
+        EmptyRow("Image could not be decoded")
+        return
+    }
+    androidx.compose.foundation.Image(
+        bitmap = bitmap,
+        contentDescription = "Response image",
+        modifier = Modifier
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .heightIn(max = 300.dp),
+    )
 }
 
 @Composable

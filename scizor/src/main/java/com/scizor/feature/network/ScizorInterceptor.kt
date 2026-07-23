@@ -43,8 +43,14 @@ class ScizorInterceptor : Interceptor {
         }
 
         val durationMs = (System.nanoTime() - startNs) / 1_000_000
+        val contentType = response.header("Content-Type")
+        val isImage = contentType?.startsWith("image/", ignoreCase = true) == true
         val peeked = runCatching { response.peekBody(MAX_BODY_BYTES) }.getOrNull()
-        val responseBody = runCatching { peeked?.string() }.getOrNull()
+        val imageBytes = if (isImage) runCatching { peeked?.bytes() }.getOrNull() else null
+        val responseBody = if (isImage) null else runCatching { peeked?.string() }.getOrNull()
+        val responseImageBase64 = imageBytes?.let {
+            runCatching { android.util.Base64.encodeToString(it, android.util.Base64.NO_WRAP) }.getOrNull()
+        }
         val graphql = GraphQL.parse(request.url.toString(), requestBody)
 
         NetworkLogger.record(
@@ -59,14 +65,15 @@ class ScizorInterceptor : Interceptor {
                 responseBody = responseBody,
                 durationMs = durationMs,
                 timestamp = timestamp,
-                contentType = response.header("Content-Type"),
+                contentType = contentType,
                 cacheControl = request.cacheControl.toString().ifBlank { null },
                 timeoutMs = chain.readTimeoutMillis().toLong(),
-                responseBytes = responseBody?.toByteArray()?.size,
+                responseBytes = imageBytes?.size ?: responseBody?.toByteArray()?.size,
                 isGraphQL = graphql != null,
                 operationName = graphql?.operationName,
                 operationType = graphql?.operationType,
                 variables = graphql?.variables,
+                responseImageBase64 = responseImageBase64,
             ),
         )
         return response

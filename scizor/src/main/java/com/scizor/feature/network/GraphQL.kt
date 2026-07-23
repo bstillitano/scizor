@@ -1,5 +1,6 @@
 package com.scizor.feature.network
 
+import org.json.JSONArray
 import org.json.JSONObject
 
 /** Parsed GraphQL details of a request. */
@@ -17,6 +18,16 @@ internal object GraphQL {
         val looksGraphQL = url.contains("graphql", true) || url.contains("/gql", true) ||
             body.contains("\"query\"")
         if (!looksGraphQL) return null
+
+        // Batched requests are a top-level JSON array of operations (Scyther: "Batch (N operations)").
+        if (body.trimStart().startsWith("[")) {
+            return runCatching {
+                val arr = JSONArray(body)
+                val first = arr.optJSONObject(0)
+                if (arr.length() == 0 || first == null || !first.has("query")) return@runCatching null
+                GraphQLInfo("Batch (${arr.length()} operations)", "Batch", body)
+            }.getOrNull()
+        }
 
         return runCatching {
             val obj = JSONObject(body)

@@ -25,6 +25,7 @@ data class NetworkTransaction(
     val operationName: String? = null,
     val operationType: String? = null,
     val variables: String? = null,
+    val responseImageBase64: String? = null,
 ) {
     val host: String
         get() = runCatching { java.net.URI(url).host ?: url }.getOrDefault(url)

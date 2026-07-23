@@ -21,6 +21,8 @@ data class NetworkTransaction(
     val operationName: String? = null,
     val operationType: String? = null,
     val variables: String? = null,
+    /** Base64 (NO_WRAP) of an image response body, when the content type is an image. */
+    val responseImageBase64: String? = null,
 ) {
     val host: String
         get() = runCatching { java.net.URI(url).host ?: url }.getOrDefault(url)
