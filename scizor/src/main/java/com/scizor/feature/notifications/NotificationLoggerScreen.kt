@@ -9,28 +9,22 @@ import android.content.Intent
 import android.provider.Settings
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material3.Button
+import androidx.compose.material.icons.filled.NotificationsOff
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
@@ -40,6 +34,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.scizor.ui.rememberSearchQuery
 import com.scizor.ui.rememberTopBarAction
+import com.scizor.ui.rememberTopBarSubtitle
 import com.scizor.ui.ScizorNavigator
 import com.scizor.ui.EmptyState
 import androidx.compose.material.icons.filled.NotificationsNone
@@ -55,44 +50,46 @@ internal fun NotificationLoggerScreen(navigator: ScizorNavigator) {
     val all by NotificationLogger.items.collectAsStateWithLifecycle()
     val enabled = NotificationLogger.isEnabled(context)
     val query = rememberSearchQuery("Search notifications")
-    if (all.isNotEmpty()) {
+
+    rememberTopBarSubtitle(if (enabled) "Access granted" else "Access required")
+
+    if (enabled && all.isNotEmpty()) {
         rememberTopBarAction(Icons.Filled.Delete, "Clear") { NotificationLogger.clear() }
+    } else {
+        rememberTopBarAction(Icons.Filled.Settings, "Notification access") {
+            runCatching {
+                context.startActivity(
+                    Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                )
+            }
+        }
     }
+
     val items = all.filter { n ->
         query.isBlank() || n.title.contains(query, true) || n.text.contains(query, true) ||
             n.packageName.contains(query, true)
     }
 
+    if (!enabled) {
+        EmptyState(
+            icon = Icons.Filled.NotificationsOff,
+            title = "Notification access required",
+            description = "Grant access from the settings icon above to start logging notifications.",
+        )
+        return
+    }
+
+    if (items.isEmpty()) {
+        EmptyState(
+            icon = Icons.Filled.NotificationsNone,
+            title = "No notifications logged",
+            description = "Notifications posted while access is granted will appear here.",
+        )
+        return
+    }
+
     Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-        if (!enabled) {
-            Text(
-                "Notification access is required to log notifications.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(16.dp),
-            )
-            Button(
-                onClick = {
-                    runCatching {
-                        context.startActivity(
-                            Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)
-                                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
-                        )
-                    }
-                },
-                modifier = Modifier.padding(horizontal = 16.dp),
-            ) { Text("Open notification access") }
-        }
-
-        if (items.isEmpty()) {
-            EmptyState(
-                icon = Icons.Filled.NotificationsNone,
-                title = "No notifications logged",
-                description = "Notifications posted while access is granted will appear here.",
-            )
-            return
-        }
-
         SectionHeader("Logged (${items.size})")
         SegmentedColumn(items = items) { notification, shapes ->
             SegmentedListItem(
