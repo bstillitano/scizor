@@ -1,24 +1,19 @@
 package com.scizor.feature.network
 
 import android.content.Intent
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
@@ -28,7 +23,9 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
+import com.scizor.ui.TopBarMenuItem
 import com.scizor.ui.rememberSearchQuery
+import com.scizor.ui.rememberTopBarActionMenu
 
 /** A full-screen, selectable, searchable text reader with highlight + share. */
 @Composable
@@ -38,29 +35,28 @@ internal fun TextReaderScreen(text: String) {
     val query = rememberSearchQuery("Search")
     val highlightColor = MaterialTheme.colorScheme.tertiary
 
+    rememberTopBarActionMenu(
+        icon = Icons.Filled.Share,
+        description = "Copy or share",
+        items = listOf(
+            TopBarMenuItem("Copy", Icons.Filled.ContentCopy) { clipboard.setText(AnnotatedString(text)) },
+            TopBarMenuItem("Share", Icons.Filled.Share) { share(context, text) },
+        ),
+    )
+
     val annotated = remember(text, query, highlightColor) { highlight(text, query, highlightColor) }
     val matches = remember(text, query) {
         if (query.isBlank()) 0 else Regex(Regex.escape(query), RegexOption.IGNORE_CASE).findAll(text).count()
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp),
-            horizontalArrangement = Arrangement.End,
-            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
-        ) {
-            if (query.isNotBlank()) {
-                Text(
-                    "$matches match${if (matches == 1) "" else "es"}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.weight(1f).padding(start = 4.dp),
-                )
-            } else {
-                Spacer(Modifier.weight(1f))
-            }
-            TextButton(onClick = { clipboard.setText(AnnotatedString(text)) }) { Text("Copy") }
-            TextButton(onClick = { share(context, text) }) { Text("Share") }
+        if (query.isNotBlank()) {
+            Text(
+                "$matches match${if (matches == 1) "" else "es"}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+            )
         }
         SelectionContainer(
             modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),

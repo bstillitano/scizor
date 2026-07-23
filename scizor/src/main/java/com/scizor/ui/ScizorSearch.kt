@@ -35,6 +35,12 @@ internal class ScizorSearchController {
     var actionDescription: String? by mutableStateOf(null)
     var onAction: (() -> Unit)? by mutableStateOf(null)
 
+    // Optional app-bar overflow action that opens a small dropdown menu (e.g. Copy / Share).
+    var actionMenuOwner: Any? by mutableStateOf(null)
+    var actionMenuIcon: ImageVector? by mutableStateOf(null)
+    var actionMenuDescription: String? by mutableStateOf(null)
+    var actionMenuItems: List<TopBarMenuItem>? by mutableStateOf(null)
+
     // Optional subtitle shown under the title in the app bar.
     var subtitleOwner: Any? by mutableStateOf(null)
     var subtitle: String? by mutableStateOf(null)
@@ -44,6 +50,13 @@ internal class ScizorSearchController {
         query = ""
     }
 }
+
+/** One entry in a top app-bar dropdown action menu (see [rememberTopBarActionMenu]). */
+internal data class TopBarMenuItem(
+    val label: String,
+    val icon: ImageVector? = null,
+    val onClick: () -> Unit,
+)
 
 internal val LocalScizorSearch = staticCompositionLocalOf<ScizorSearchController?> { null }
 
@@ -87,6 +100,32 @@ internal fun rememberTopBarSubtitle(subtitle: String) {
             if (controller.subtitleOwner === token) {
                 controller.subtitleOwner = null
                 controller.subtitle = null
+            }
+        }
+    }
+}
+
+/**
+ * Registers a top app-bar overflow action that opens a small dropdown menu when
+ * tapped (e.g. a share icon revealing Copy / Share). Shown to the left of the
+ * search magnifier. No-op without a host.
+ */
+@Composable
+internal fun rememberTopBarActionMenu(icon: ImageVector, description: String, items: List<TopBarMenuItem>) {
+    val controller = LocalScizorSearch.current ?: return
+    val latest by rememberUpdatedState(items)
+    val token = remember { Any() }
+    DisposableEffect(controller, icon, description) {
+        controller.actionMenuOwner = token
+        controller.actionMenuIcon = icon
+        controller.actionMenuDescription = description
+        controller.actionMenuItems = latest
+        onDispose {
+            if (controller.actionMenuOwner === token) {
+                controller.actionMenuOwner = null
+                controller.actionMenuIcon = null
+                controller.actionMenuDescription = null
+                controller.actionMenuItems = null
             }
         }
     }
