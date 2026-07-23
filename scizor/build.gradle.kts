@@ -59,6 +59,11 @@ dependencies {
     // want QR scanning add `debugImplementation(libs.play.services.code.scanner)`.
     compileOnly(libs.play.services.code.scanner)
 
+    // Optional: the Location Spoofer also mocks the fused provider (Google Play
+    // Services) when present, so apps using FusedLocationProviderClient / Google Maps
+    // follow the spoof. compileOnly — consumers add `debugImplementation(libs.play.services.location)`.
+    compileOnly(libs.play.services.location)
+
     testImplementation(libs.junit)
     testImplementation(libs.robolectric)
     testImplementation(libs.coroutines.test)

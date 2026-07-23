@@ -8,17 +8,19 @@ import androidx.compose.material.icons.filled.Cookie
 import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.DarkMode
-import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.FormatShapes
+import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.ListAlt
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.Terminal
 import androidx.compose.material.icons.filled.TextFields
+import androidx.compose.material.icons.filled.TouchApp
 import androidx.compose.material.icons.filled.Tune
 import com.scizor.feature.appearance.AppearanceScreen
 import com.scizor.feature.console.ConsoleScreen
@@ -31,7 +33,9 @@ import com.scizor.feature.featureflags.FeatureFlagsScreen
 import com.scizor.feature.filebrowser.FileBrowserScreen
 import com.scizor.feature.fonts.FontsScreen
 import com.scizor.feature.interfacepreviews.InterfacePreviewsScreen
-import com.scizor.feature.interfacetools.UiToolsScreen
+import com.scizor.feature.interfacetools.FpsCounterScreen
+import com.scizor.feature.interfacetools.GridOverlayScreen
+import com.scizor.feature.interfacetools.TouchVisualiserScreen
 import com.scizor.feature.keystore.KeystoreScreen
 import com.scizor.feature.location.LocationSpooferScreen
 import com.scizor.feature.network.NetworkScreen
@@ -51,7 +55,7 @@ internal fun registerBuiltInFeatures() {
         ScizorMenuEntry(
             id = "network",
             title = "Network Logger",
-            subtitle = "Inspect HTTP traffic, export cURL",
+            subtitle = "Inspect HTTP and GraphQL traffic",
             icon = Icons.Filled.CompareArrows,
             section = "Networking",
             screen = { NetworkScreen(it) },
@@ -101,9 +105,19 @@ internal fun registerBuiltInFeatures() {
     )
     FeatureRegistry.register(
         ScizorMenuEntry(
+            id = "cookies",
+            title = "Cookie Browser",
+            subtitle = "Cookies seen in captured traffic",
+            icon = Icons.Filled.Cookie,
+            section = "Data",
+            screen = { CookiesScreen(it) },
+        ),
+    )
+    FeatureRegistry.register(
+        ScizorMenuEntry(
             id = "file_browser",
             title = "File Browser",
-            subtitle = "Browse the app sandbox",
+            subtitle = "Browse the app's sandbox files",
             icon = Icons.Filled.Folder,
             section = "Data",
             screen = { FileBrowserScreen(it) },
@@ -113,20 +127,10 @@ internal fun registerBuiltInFeatures() {
         ScizorMenuEntry(
             id = "database_browser",
             title = "Database Browser",
-            subtitle = "Inspect SQLite databases",
+            subtitle = "Browse and query SQLite databases",
             icon = Icons.Filled.Storage,
             section = "Data",
             screen = { DatabaseBrowserScreen(it) },
-        ),
-    )
-    FeatureRegistry.register(
-        ScizorMenuEntry(
-            id = "cookies",
-            title = "Cookie Browser",
-            subtitle = "Cookies seen in captured traffic",
-            icon = Icons.Filled.Cookie,
-            section = "Data",
-            screen = { CookiesScreen(it) },
         ),
     )
 
@@ -135,7 +139,7 @@ internal fun registerBuiltInFeatures() {
         ScizorMenuEntry(
             id = "keystore",
             title = "Keystore Browser",
-            subtitle = "AndroidKeyStore aliases",
+            subtitle = "Inspect AndroidKeyStore entries",
             icon = Icons.Filled.Key,
             section = "Security",
             screen = { KeystoreScreen(it) },
@@ -147,7 +151,7 @@ internal fun registerBuiltInFeatures() {
         ScizorMenuEntry(
             id = "location",
             title = "Location Spoofer",
-            subtitle = "Set a mock GPS location",
+            subtitle = "Mock GPS location and routes",
             icon = Icons.Filled.LocationOn,
             section = "System Tools",
             screen = { LocationSpooferScreen() },
@@ -206,15 +210,17 @@ internal fun registerBuiltInFeatures() {
         ),
     )
 
-    // UI/UX
+    // UI/UX — order mirrors Scyther: Fonts, Interface Previews, then the overlay tools,
+    // then Appearance. Slow animations / view frames / view sizes are inline toggles
+    // added by the menu view model.
     FeatureRegistry.register(
         ScizorMenuEntry(
-            id = "ui_tools",
-            title = "Interface Tools",
-            subtitle = "Grid, view bounds, touches, FPS",
-            icon = Icons.Filled.Dashboard,
+            id = "fonts",
+            title = "Fonts",
+            subtitle = "Browse app and system fonts",
+            icon = Icons.Filled.TextFields,
             section = "UI/UX",
-            screen = { UiToolsScreen(it) },
+            screen = { FontsScreen() },
         ),
     )
     FeatureRegistry.register(
@@ -229,19 +235,39 @@ internal fun registerBuiltInFeatures() {
     )
     FeatureRegistry.register(
         ScizorMenuEntry(
-            id = "fonts",
-            title = "Fonts",
-            subtitle = "Browse system fonts",
-            icon = Icons.Filled.TextFields,
+            id = "grid_overlay",
+            title = "Grid Overlay",
+            subtitle = "Overlay a spacing grid",
+            icon = Icons.Filled.GridView,
             section = "UI/UX",
-            screen = { FontsScreen() },
+            screen = { GridOverlayScreen() },
+        ),
+    )
+    FeatureRegistry.register(
+        ScizorMenuEntry(
+            id = "fps_counter",
+            title = "FPS Counter",
+            subtitle = "Frame-rate meter overlay",
+            icon = Icons.Filled.Speed,
+            section = "UI/UX",
+            screen = { FpsCounterScreen() },
+        ),
+    )
+    FeatureRegistry.register(
+        ScizorMenuEntry(
+            id = "touch_visualiser",
+            title = "Touch Visualiser",
+            subtitle = "Show every touch on screen",
+            icon = Icons.Filled.TouchApp,
+            section = "UI/UX",
+            screen = { TouchVisualiserScreen() },
         ),
     )
     FeatureRegistry.register(
         ScizorMenuEntry(
             id = "appearance",
             title = "Appearance",
-            subtitle = "Force light / dark mode",
+            subtitle = "Theme, font scale, contrast",
             icon = Icons.Filled.DarkMode,
             section = "UI/UX",
             screen = { AppearanceScreen() },

@@ -130,6 +130,7 @@ internal object LocationSpoofer {
     fun start(context: Context, latitude: Double, longitude: Double, label: String): Boolean {
         val manager = context.getSystemService(Context.LOCATION_SERVICE) as? LocationManager ?: return false
         if (!register(manager)) return false
+        FusedLocationMocker.start(context)
         persist(latitude, longitude, label)
         _active.value = MockLocation(latitude, longitude, label, moving = false)
         startPusher(manager)
@@ -139,6 +140,7 @@ internal object LocationSpoofer {
     fun startRoute(context: Context, route: Route): Boolean {
         val manager = context.getSystemService(Context.LOCATION_SERVICE) as? LocationManager ?: return false
         if (!register(manager)) return false
+        FusedLocationMocker.start(context)
         val path = interpolate(route.waypoints)
         if (path.isEmpty()) return false
         pushJob?.cancel()
@@ -160,6 +162,7 @@ internal object LocationSpoofer {
         pushJob = null
         val manager = context.getSystemService(Context.LOCATION_SERVICE) as? LocationManager
         manager?.let { m -> providers.forEach { runCatching { m.removeTestProvider(it) } } }
+        FusedLocationMocker.stop()
         _active.value = null
     }
 
@@ -196,6 +199,8 @@ internal object LocationSpoofer {
         providers.forEach { provider ->
             runCatching { manager.setTestProviderLocation(provider, mockLocation(provider, lat, lng)) }
         }
+        // Also feed the fused provider when Play Services location is present.
+        FusedLocationMocker.push(mockLocation("fused", lat, lng))
     }
 
     /** Splits each waypoint segment into [ROUTE_SUBDIVISIONS] linear steps. */

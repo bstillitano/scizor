@@ -42,6 +42,31 @@ internal class MenuViewModel : ViewModel() {
             )
         }
 
+        // Custom developer options sit in their own section directly under Application.
+        val developerRows = Scizor.developerOptions.map { option ->
+            val id = "developer_option_${option.title}"
+            when {
+                option.value != null -> MenuRow.Info(id, option.title, option.value!!)
+                option.screen != null -> MenuRow.Action(
+                    id = id,
+                    title = option.title,
+                    subtitle = null,
+                    icon = option.icon ?: Icons.Filled.Extension,
+                    action = MenuAction.Open(option.title) { option.screen!!.invoke() },
+                )
+                else -> MenuRow.Action(
+                    id = id,
+                    title = option.title,
+                    subtitle = null,
+                    icon = option.icon ?: Icons.Filled.Extension,
+                    action = MenuAction.Run(option.onClick),
+                )
+            }
+        }
+        if (developerRows.isNotEmpty()) {
+            groups += MenuGroupUi(title = "Development Tools", rows = developerRows)
+        }
+
         // Pinned entries, oldest-first, filtered to still-registered ids.
         val registry = FeatureRegistry.all().associateBy { it.id }
         val pinned = pins.mapNotNull { registry[it] }
@@ -76,20 +101,6 @@ internal class MenuViewModel : ViewModel() {
                         rows += MenuRow.Info("fcm_token", "FCM Token", it, Icons.Filled.LocalFireDepartment)
                     }
                 }
-                if (section == "UI/UX") {
-                    rows += MenuRow.Toggle(
-                        "toggle_frames", "View frames", "Outline every view",
-                        Icons.Filled.CheckBoxOutlineBlank, InterfaceToolkit.frames, InterfaceToolkit::setFrames,
-                    )
-                    rows += MenuRow.Toggle(
-                        "toggle_sizes", "View sizes", "Width × height labels",
-                        Icons.Filled.Straighten, InterfaceToolkit.sizes, InterfaceToolkit::setSizes,
-                    )
-                    rows += MenuRow.Toggle(
-                        "toggle_slow", "Slow animations", "Scale durations 10×",
-                        Icons.Filled.Slideshow, InterfaceToolkit.slowAnimations, InterfaceToolkit::setSlowAnimations,
-                    )
-                }
                 rows += entries.map { entry ->
                     MenuRow.Action(
                         id = entry.id,
@@ -100,38 +111,23 @@ internal class MenuViewModel : ViewModel() {
                         pinnableId = entry.id,
                     )
                 }
+                // Inline quick toggles at the bottom of UI/UX, matching Scyther.
+                if (section == "UI/UX") {
+                    rows += MenuRow.Toggle(
+                        "toggle_slow", "Slow animations", "Scale durations 10×",
+                        Icons.Filled.Slideshow, InterfaceToolkit.slowAnimations, InterfaceToolkit::setSlowAnimations,
+                    )
+                    rows += MenuRow.Toggle(
+                        "toggle_frames", "Show view frames", "Outline every view",
+                        Icons.Filled.CheckBoxOutlineBlank, InterfaceToolkit.frames, InterfaceToolkit::setFrames,
+                    )
+                    rows += MenuRow.Toggle(
+                        "toggle_sizes", "Show view sizes", "Width × height labels",
+                        Icons.Filled.Straighten, InterfaceToolkit.sizes, InterfaceToolkit::setSizes,
+                    )
+                }
                 groups += MenuGroupUi(title = section, rows = rows)
             }
-
-        val developerOptions = Scizor.developerOptions
-        if (developerOptions.isNotEmpty()) {
-            groups += MenuGroupUi(
-                title = "Developer",
-                rows = developerOptions.map { option ->
-                    val id = "developer_option_${option.title}"
-                    when {
-                        option.value != null ->
-                            MenuRow.Info(id, option.title, option.value!!)
-                        option.screen != null ->
-                            MenuRow.Action(
-                                id = id,
-                                title = option.title,
-                                subtitle = null,
-                                icon = option.icon ?: Icons.Filled.Extension,
-                                action = MenuAction.Open(option.title) { option.screen!!.invoke() },
-                            )
-                        else ->
-                            MenuRow.Action(
-                                id = id,
-                                title = option.title,
-                                subtitle = null,
-                                icon = option.icon ?: Icons.Filled.Extension,
-                                action = MenuAction.Run(option.onClick),
-                            )
-                    }
-                },
-            )
-        }
 
         return groups
     }

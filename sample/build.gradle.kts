@@ -47,6 +47,9 @@ dependencies {
     // Enables the Deep Link Tester's QR scanner in debug builds (optional in Scizor).
     debugImplementation(libs.play.services.code.scanner)
 
+    // Enables Scizor's fused-provider location mocking (optional in Scizor).
+    debugImplementation(libs.play.services.location)
+
     implementation(libs.core.ktx)
     implementation(libs.activity.compose)
     implementation(libs.okhttp)

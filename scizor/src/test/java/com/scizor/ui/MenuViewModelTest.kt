@@ -43,16 +43,18 @@ class MenuViewModelTest {
     }
 
     @Test
-    fun `developer options appear in a Developer section`() {
+    fun `developer options appear in a Development Tools section right after Application`() {
         val context = RuntimeEnvironment.getApplication()
         Scizor.developerOptions = listOf(
             DeveloperOption(title = "Reset onboarding") {},
         )
 
         val groups = MenuViewModel().groups(context, null, emptyList())
-        val developer = groups.first { it.title == "Developer" }
+        val devIndex = groups.indexOfFirst { it.title == "Development Tools" }
+        val appIndex = groups.indexOfFirst { it.title == "Application" }
+        assertTrue(devIndex == appIndex + 1)
         assertTrue(
-            developer.rows.filterIsInstance<MenuRow.Action>().any { it.title == "Reset onboarding" },
+            groups[devIndex].rows.filterIsInstance<MenuRow.Action>().any { it.title == "Reset onboarding" },
         )
 
         Scizor.developerOptions = emptyList()

@@ -15,6 +15,7 @@ androidxTestExt = "1.2.1"
 espresso = "3.6.1"
 robolectric = "4.16.1"
 codeScanner = "16.1.0"
+locationServices = "21.3.0"
 osmdroid = "6.1.20"
 
 [libraries]
@@ -40,6 +41,7 @@ androidx-test-ext = { module = "androidx.test.ext:junit", version.ref = "android
 espresso-core = { module = "androidx.test.espresso:espresso-core", version.ref = "espresso" }
 robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
 play-services-code-scanner = { module = "com.google.android.gms:play-services-code-scanner", version.ref = "codeScanner" }
+play-services-location = { module = "com.google.android.gms:play-services-location", version.ref = "locationServices" }
 osmdroid-android = { module = "org.osmdroid:osmdroid-android", version.ref = "osmdroid" }
 
 [plugins]
