@@ -37,6 +37,8 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.scizor.ui.rememberSearchQuery
+import com.scizor.ui.EmptyState
+import androidx.compose.material.icons.filled.Terminal
 import com.scizor.ui.rememberTopBarAction
 
 @Composable
@@ -86,16 +88,11 @@ internal fun ConsoleScreen(viewModel: ConsoleViewModel = viewModel()) {
         }
 
         if (entries.isEmpty()) {
-            androidx.compose.foundation.layout.Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = androidx.compose.ui.Alignment.Center,
-            ) {
-                Text(
-                    "No logs yet.\nConsole output will appear here.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
+            EmptyState(
+                icon = Icons.Filled.Terminal,
+                title = "No logs yet",
+                description = "Live Logcat output will stream in here.",
+            )
             return@Column
         }
 

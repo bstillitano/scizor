@@ -57,6 +57,9 @@ internal fun scizorApiSurface(application: Application) {
     val servers: ServerConfiguration = Scizor.servers
     val console: ConsoleLogger = Scizor.console
     val prefs: PreferencesBrowser = Scizor.preferences
+    Scizor.cookies.log(name = "k", value = "v", domain = "example.com")
+    Scizor.cookies.captureWebView("https://example.com")
+    Scizor.cookies.clear()
 
     // Device info
     val rows: List<InfoRow> = DeviceInfo.collect(application)

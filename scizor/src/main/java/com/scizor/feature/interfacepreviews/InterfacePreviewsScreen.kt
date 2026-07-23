@@ -20,6 +20,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.scizor.Scizor
+import com.scizor.ui.EmptyState
+import androidx.compose.material.icons.filled.Widgets
 import com.scizor.ui.ScizorNavigator
 
 @Composable
@@ -27,14 +29,11 @@ internal fun InterfacePreviewsScreen(navigator: ScizorNavigator) {
     val previews = Scizor.interfacePreviews
 
     if (previews.isEmpty()) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text(
-                "No interface previews registered.\nAssign Scizor.interfacePreviews in your app.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(24.dp),
-            )
-        }
+        EmptyState(
+            icon = Icons.Filled.Widgets,
+            title = "No interface previews",
+            description = "Assign Scizor.interfacePreviews in your app to preview components here.",
+        )
         return
     }
 

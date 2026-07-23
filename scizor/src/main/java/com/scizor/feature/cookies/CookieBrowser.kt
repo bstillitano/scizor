@@ -24,8 +24,40 @@ internal data class Cookie(
  */
 internal object CookieBrowser {
 
+    /** Cookies the host app registered directly (in addition to captured traffic). */
+    private val logged = mutableListOf<Cookie>()
+
+    /** Records a cookie supplied by the host app. */
+    fun log(
+        name: String,
+        value: String,
+        domain: String,
+        path: String?,
+        secure: Boolean,
+        httpOnly: Boolean,
+        sameSite: String?,
+        expires: String?,
+    ) {
+        logged.removeAll { it.name == name && it.host == domain }
+        logged.add(Cookie(name, value, domain, sent = false, path, domain, expires, httpOnly, secure, sameSite))
+    }
+
+    /** Reads the WebView cookie store for [url] and records each cookie. */
+    fun captureWebView(url: String) {
+        val header = runCatching {
+            android.webkit.CookieManager.getInstance().getCookie(url)
+        }.getOrNull() ?: return
+        val host = runCatching { java.net.URI(url).host }.getOrNull() ?: url
+        header.split(";").forEach { pair ->
+            parsePair(pair)?.let { (n, v) -> log(n, v, host, null, false, false, null, null) }
+        }
+    }
+
+    fun clearLogged() = logged.clear()
+
     fun cookies(): List<Cookie> {
         val result = LinkedHashMap<String, Cookie>()
+        logged.forEach { put(result, it) }
         NetworkLogger.transactions.value.forEach { tx ->
             tx.requestHeaders
                 .filterKeys { it.equals("Cookie", ignoreCase = true) }

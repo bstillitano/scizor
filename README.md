@@ -249,6 +249,7 @@ still resolve to their registered defaults, so any host logic that reads them ke
 | `Scizor.featureFlags` | `register`, `isEnabled`, `override` |
 | `Scizor.servers` | `configure`, `select`, `baseUrl` |
 | `Scizor.preferences` | Read/edit `SharedPreferences` |
+| `Scizor.cookies` | `log(...)`, `captureWebView(url)` — feed cookies to the browser |
 | `Scizor.console` | Logcat capture |
 | `Scizor.developerOptions` | Custom menu entries |
 | `Scizor.environmentVariables` | Read-only key/value display |

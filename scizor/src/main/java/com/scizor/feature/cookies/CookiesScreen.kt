@@ -17,6 +17,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.CallMade
 import androidx.compose.material.icons.filled.CallReceived
+import androidx.compose.material.icons.filled.Cookie
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SegmentedListItem
@@ -29,6 +30,7 @@ import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.scizor.ui.EmptyState
 import com.scizor.ui.ScizorNavigator
 import com.scizor.ui.rememberSearchQuery
 import com.scizor.ui.SectionHeader
@@ -41,14 +43,11 @@ internal fun CookiesScreen(navigator: ScizorNavigator) {
     val query = rememberSearchQuery("Search cookies")
 
     if (all.isEmpty()) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text(
-                "No cookies observed in captured traffic.\nMake requests through Scizor's interceptor first.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(24.dp),
-            )
-        }
+        EmptyState(
+            icon = Icons.Filled.Cookie,
+            title = "No cookies yet",
+            description = "Cookies from captured traffic appear here, or log your own with Scizor.cookies.log(...).",
+        )
         return
     }
 

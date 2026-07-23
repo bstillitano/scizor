@@ -17,7 +17,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CompareArrows
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.SearchOff
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -36,6 +38,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.scizor.ui.EmptyState
 import com.scizor.ui.rememberSearchQuery
 import com.scizor.ui.rememberTopBarAction
 import com.scizor.ui.ScizorNavigator
@@ -76,16 +79,17 @@ private fun NetworkList(
 
     Column(modifier = Modifier.fillMaxSize()) {
         if (filtered.isEmpty()) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text(
-                    if (transactions.isEmpty()) {
-                        "No HTTP traffic captured yet.\nAdd Scizor.network.interceptor() to your OkHttpClient."
-                    } else {
-                        "No requests match your search."
-                    },
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(24.dp),
+            if (transactions.isEmpty()) {
+                EmptyState(
+                    icon = Icons.Filled.CompareArrows,
+                    title = "No HTTP traffic yet",
+                    description = "Add Scizor.network.interceptor() to your OkHttpClient, then make a request.",
+                )
+            } else {
+                EmptyState(
+                    icon = Icons.Filled.SearchOff,
+                    title = "No matching requests",
+                    description = "Try a different search term.",
                 )
             }
             return

@@ -47,6 +47,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.scizor.ui.rememberSearchQuery
+import com.scizor.ui.EmptyState
+import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.Icons
 import com.scizor.ui.ScizorNavigator
 import com.scizor.ui.SectionHeader
 import com.scizor.ui.SegmentInset
@@ -64,13 +67,11 @@ internal fun PreferencesScreen(
     var confirmReset by remember { mutableStateOf(false) }
 
     if (state.files.isEmpty()) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text(
-                "No SharedPreferences files found.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
+        EmptyState(
+            icon = Icons.Filled.Tune,
+            title = "No preferences",
+            description = "This app has no SharedPreferences files yet.",
+        )
         return
     }
 

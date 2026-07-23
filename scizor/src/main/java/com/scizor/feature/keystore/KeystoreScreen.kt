@@ -31,6 +31,8 @@ import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import com.scizor.ui.ScizorNavigator
+import com.scizor.ui.EmptyState
+import androidx.compose.material.icons.filled.Key
 import com.scizor.ui.rememberSearchQuery
 import com.scizor.ui.SectionHeader
 import com.scizor.ui.SegmentedColumn
@@ -44,14 +46,11 @@ internal fun KeystoreScreen(navigator: ScizorNavigator) {
     val query = rememberSearchQuery("Search aliases")
 
     if (entries.isEmpty()) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text(
-                "No AndroidKeyStore entries.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(24.dp),
-            )
-        }
+        EmptyState(
+            icon = Icons.Filled.Key,
+            title = "No keystore entries",
+            description = "This app has no keys or certificates in the AndroidKeyStore.",
+        )
         return
     }
 

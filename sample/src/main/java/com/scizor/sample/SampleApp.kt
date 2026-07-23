@@ -88,9 +88,24 @@ class SampleApp : Application() {
             },
         )
 
+        seedDemoCookies()
         seedDemoPreferences()
         seedDemoDatabase()
         Log.i("ScizorSample", "Sample app started")
+    }
+
+    /** Registers demo cookies with Scizor so the Cookie Browser has data. */
+    private fun seedDemoCookies() {
+        Scizor.cookies.log(
+            name = "session_id", value = "abc123def456", domain = "example.com",
+            path = "/", secure = true, httpOnly = true, expires = "7 days",
+        )
+        Scizor.cookies.log(name = "user_prefs", value = "theme=dark&lang=en", domain = "example.com", path = "/")
+        Scizor.cookies.log(name = "_ga", value = "GA1.2.1234567890.1234567890", domain = "analytics.example.com")
+        Scizor.cookies.log(
+            name = "auth_token", value = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9", domain = "api.example.com",
+            path = "/api", secure = true,
+        )
     }
 
     /** Seeds the demo SQLite database (users, posts, products) for the Database browser. */

@@ -31,6 +31,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.scizor.ui.CopyMenuHost
+import com.scizor.ui.EmptyState
+import androidx.compose.material.icons.filled.Dns
 import com.scizor.ui.rememberSearchQuery
 import com.scizor.ui.SectionHeader
 import com.scizor.ui.SegmentedColumn
@@ -42,14 +44,11 @@ internal fun ServersScreen(viewModel: ServersViewModel = viewModel()) {
     val query = rememberSearchQuery("Search name or variable key/values")
 
     if (state.environments.isEmpty()) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text(
-                "No server environments configured.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(24.dp),
-            )
-        }
+        EmptyState(
+            icon = Icons.Filled.Dns,
+            title = "No server environments",
+            description = "Register environments via Scizor.servers.configure(...) in your app.",
+        )
         return
     }
 

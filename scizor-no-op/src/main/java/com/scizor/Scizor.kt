@@ -37,6 +37,8 @@ object Scizor {
 
     val preferences: PreferencesBrowser get() = PreferencesBrowser
 
+    val cookies: com.scizor.feature.cookies.CookieLog get() = com.scizor.feature.cookies.CookieLog
+
     @Suppress("UNUSED_PARAMETER")
     fun start(application: Application) = Unit
 

@@ -41,6 +41,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.scizor.ui.rememberSearchQuery
 import com.scizor.ui.rememberTopBarAction
 import com.scizor.ui.ScizorNavigator
+import com.scizor.ui.EmptyState
+import androidx.compose.material.icons.filled.NotificationsNone
 import com.scizor.ui.SectionHeader
 import com.scizor.ui.SegmentedColumn
 import com.scizor.ui.scizorSegmentedColors
@@ -83,13 +85,11 @@ internal fun NotificationLoggerScreen(navigator: ScizorNavigator) {
         }
 
         if (items.isEmpty()) {
-            Box(modifier = Modifier.fillMaxSize().padding(top = 48.dp), contentAlignment = Alignment.Center) {
-                Text(
-                    "No notifications logged yet.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
+            EmptyState(
+                icon = Icons.Filled.NotificationsNone,
+                title = "No notifications logged",
+                description = "Notifications posted while access is granted will appear here.",
+            )
             return
         }
 

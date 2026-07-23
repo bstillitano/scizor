@@ -80,6 +80,9 @@ object Scizor {
     /** SharedPreferences inspection. */
     val preferences: PreferencesBrowser get() = PreferencesBrowser
 
+    /** Record cookies from the host so they appear in the Cookie Browser. */
+    val cookies: com.scizor.feature.cookies.CookieLog get() = com.scizor.feature.cookies.CookieLog
+
     /**
      * Wires up Scizor. Call once, early in [Application.onCreate].
      * Safe to call more than once; subsequent calls are ignored.

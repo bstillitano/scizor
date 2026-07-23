@@ -46,6 +46,9 @@ import com.scizor.ui.SectionHeader
 import com.scizor.ui.rememberSearchQuery
 import com.scizor.ui.rememberTopBarAction
 import com.scizor.ui.SegmentInset
+import com.scizor.ui.EmptyState
+import androidx.compose.material.icons.filled.SearchOff
+import androidx.compose.material.icons.filled.CheckCircle
 import com.scizor.ui.SegmentedColumn
 import com.scizor.ui.scizorSegmentedColors
 import java.text.DateFormat
@@ -67,12 +70,17 @@ internal fun CrashLogsScreen(navigator: ScizorNavigator) {
 
     Box(modifier = Modifier.fillMaxSize()) {
         if (filtered.isEmpty()) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text(
-                    if (crashes.isEmpty()) "No crashes recorded.\nThat's a good thing!" else "No matching crashes.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(24.dp),
+            if (crashes.isEmpty()) {
+                EmptyState(
+                    icon = Icons.Filled.CheckCircle,
+                    title = "No crashes recorded",
+                    description = "That's a good thing — uncaught exceptions will show up here.",
+                )
+            } else {
+                EmptyState(
+                    icon = Icons.Filled.SearchOff,
+                    title = "No matching crashes",
+                    description = "Try a different search term.",
                 )
             }
         } else {

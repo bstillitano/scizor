@@ -24,6 +24,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.scizor.ui.SectionHeader
+import com.scizor.ui.EmptyState
+import androidx.compose.material.icons.filled.TextFields
+import androidx.compose.material.icons.Icons
 import com.scizor.ui.SegmentInset
 import com.scizor.ui.rememberSearchQuery
 import com.scizor.ui.scizorSegmentedColors
@@ -61,13 +64,11 @@ internal fun FontsScreen() {
     }
 
     if (rows.isEmpty()) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text(
-                if (query.isBlank()) "No fonts found." else "No fonts match “$query”.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
+        EmptyState(
+            icon = Icons.Filled.TextFields,
+            title = if (query.isBlank()) "No fonts found" else "No fonts match “$query”",
+            description = if (query.isBlank()) null else "Try a different search term.",
+        )
         return
     }
 

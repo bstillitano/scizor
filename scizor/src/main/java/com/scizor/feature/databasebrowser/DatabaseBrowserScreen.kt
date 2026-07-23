@@ -471,13 +471,7 @@ private fun Chevron() {
 
 @Composable
 private fun EmptyState(text: String) {
-    Box(modifier = Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
-        Text(
-            text,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-    }
+    com.scizor.ui.EmptyState(icon = Icons.Filled.Storage, title = text)
 }
 
 private fun formatBytes(bytes: Long): String = when {
