@@ -19,8 +19,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DirectionsRun
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -43,6 +43,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.scizor.ui.rememberSearchQuery
+import com.scizor.ui.rememberTopBarAction
 import com.scizor.ui.SectionHeader
 import com.scizor.ui.SegmentedColumn
 import com.scizor.ui.scizorSegmentedColors
@@ -127,7 +128,15 @@ internal fun LocationSpooferScreen() {
     val last = remember { LocationSpoofer.lastLocation() }
     var lat by remember { mutableStateOf(last?.latitude?.toString().orEmpty()) }
     var lng by remember { mutableStateOf(last?.longitude?.toString().orEmpty()) }
-    val query = rememberSearchQuery("Search cities")
+
+    rememberTopBarAction(Icons.Filled.Settings, "Open Developer options") {
+        runCatching {
+            context.startActivity(
+                android.content.Intent(android.provider.Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS)
+                    .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK),
+            )
+        }
+    }
 
     fun apply(latitude: Double, longitude: Double, label: String) {
         val ok = LocationSpoofer.start(context, latitude, longitude, label)
@@ -147,37 +156,41 @@ internal fun LocationSpooferScreen() {
         ).show()
     }
 
+    val mock = active
+
     Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-        // Master toggle
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text("Mock location", style = MaterialTheme.typography.titleMedium)
-                Text(
-                    active?.let {
-                        if (it.moving) "Moving · ${it.label}" else "Active · ${it.label}"
-                    } ?: "Off",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            Switch(
-                checked = active != null,
-                onCheckedChange = { on ->
-                    if (!on) {
-                        LocationSpoofer.stop(context)
-                    } else {
-                        val la = lat.toDoubleOrNull()
-                        val lo = lng.toDoubleOrNull()
-                        if (la != null && lo != null) apply(la, lo, "Custom") else apply(37.7749, -122.4194, "San Francisco")
-                    }
+        SectionHeader("Mock location")
+        SegmentedColumn(items = listOf("master")) { _, shapes ->
+            SegmentedListItem(
+                shapes = shapes,
+                colors = scizorSegmentedColors(),
+                supportingContent = {
+                    Text(
+                        mock?.let {
+                            if (it.moving) "Moving · ${it.label}" else "Active · ${it.label}"
+                        } ?: "Off",
+                    )
                 },
+                trailingContent = {
+                    Switch(
+                        checked = mock != null,
+                        onCheckedChange = { on ->
+                            if (!on) {
+                                LocationSpoofer.stop(context)
+                            } else {
+                                val la = lat.toDoubleOrNull()
+                                val lo = lng.toDoubleOrNull()
+                                if (la != null && lo != null) apply(la, lo, "Custom")
+                                else apply(37.7749, -122.4194, "San Francisco")
+                            }
+                        },
+                    )
+                },
+                content = { Text("Mock location", style = MaterialTheme.typography.titleMedium) },
             )
         }
 
-        active?.let { mock ->
+        if (mock != null) {
             SpooferMap(mock.latitude, mock.longitude) { la, lo ->
                 lat = "%.6f".format(la)
                 lng = "%.6f".format(lo)
@@ -198,76 +211,65 @@ internal fun LocationSpooferScreen() {
                     content = { Text(m.label) },
                 )
             }
-        }
 
-        SectionHeader("Custom")
-        Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
-            OutlinedTextField(
-                value = lat,
-                onValueChange = { lat = it },
-                label = { Text("Latitude") },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                modifier = Modifier.weight(1f).padding(end = 8.dp),
-            )
-            OutlinedTextField(
-                value = lng,
-                onValueChange = { lng = it },
-                label = { Text("Longitude") },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                modifier = Modifier.weight(1f),
-            )
-        }
-        Button(
-            onClick = { apply(lat.toDouble(), lng.toDouble(), "Custom") },
-            enabled = lat.toDoubleOrNull() != null && lng.toDoubleOrNull() != null,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-        ) { Text("Apply custom location") }
+            SectionHeader("Custom")
+            Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
+                OutlinedTextField(
+                    value = lat,
+                    onValueChange = { lat = it },
+                    label = { Text("Latitude") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.weight(1f).padding(end = 8.dp),
+                )
+                OutlinedTextField(
+                    value = lng,
+                    onValueChange = { lng = it },
+                    label = { Text("Longitude") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.weight(1f),
+                )
+            }
+            Button(
+                onClick = { apply(lat.toDouble(), lng.toDouble(), "Custom") },
+                enabled = lat.toDoubleOrNull() != null && lng.toDoubleOrNull() != null,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+            ) { Text("Apply custom location") }
 
-        SectionHeader("Routes")
-        SegmentedColumn(items = LocationSpoofer.routes) { route, shapes ->
-            SegmentedListItem(
-                onClick = { replay(route) },
-                shapes = shapes,
-                colors = scizorSegmentedColors(),
-                leadingContent = { Icon(Icons.Filled.PlayArrow, null, tint = MaterialTheme.colorScheme.primary) },
-                supportingContent = { Text("${route.waypoints.size} waypoints") },
-                content = { Text(route.name) },
-            )
-        }
+            SectionHeader("Routes")
+            SegmentedColumn(items = LocationSpoofer.routes) { route, shapes ->
+                SegmentedListItem(
+                    onClick = { replay(route) },
+                    shapes = shapes,
+                    colors = scizorSegmentedColors(),
+                    leadingContent = { Icon(Icons.Filled.PlayArrow, null, tint = MaterialTheme.colorScheme.primary) },
+                    supportingContent = { Text("${route.waypoints.size} waypoints") },
+                    content = { Text(route.name) },
+                )
+            }
 
-        SectionHeader("Cities")
-        val cities = LocationSpoofer.presets.filter { query.isBlank() || it.name.contains(query, true) }
-        SegmentedColumn(items = cities) { preset, shapes ->
-            SegmentedListItem(
-                onClick = { apply(preset.latitude, preset.longitude, preset.name) },
-                shapes = shapes,
-                colors = scizorSegmentedColors(),
-                supportingContent = { Text("%.4f, %.4f".format(preset.latitude, preset.longitude)) },
-                content = { Text(preset.name) },
-            )
+            val query = rememberSearchQuery("Search cities")
+            SectionHeader("Cities")
+            val cities = LocationSpoofer.presets.filter { query.isBlank() || it.name.contains(query, true) }
+            SegmentedColumn(items = cities) { preset, shapes ->
+                SegmentedListItem(
+                    onClick = { apply(preset.latitude, preset.longitude, preset.name) },
+                    shapes = shapes,
+                    colors = scizorSegmentedColors(),
+                    supportingContent = { Text("%.4f, %.4f".format(preset.latitude, preset.longitude)) },
+                    content = { Text(preset.name) },
+                )
+            }
         }
 
         Text(
             "Mocking requires this app to be the device's mock-location app: Developer options → " +
-                "“Select mock location app”. Enable Developer options first (tap Build number 7×).",
+                "“Select mock location app” (open it from the icon above). Enable Developer options " +
+                "first (tap Build number 7×).",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(horizontal = 28.dp, vertical = 12.dp),
         )
-        OutlinedButton(
-            onClick = {
-                runCatching {
-                    context.startActivity(
-                        android.content.Intent(android.provider.Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS)
-                            .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK),
-                    )
-                }
-            },
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
-        ) {
-            Text("Open Developer options")
-        }
     }
 }
