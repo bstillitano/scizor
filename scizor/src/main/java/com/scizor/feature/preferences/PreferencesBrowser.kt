@@ -66,6 +66,9 @@ object PreferencesBrowser {
     fun putFloat(context: Context, file: String, key: String, value: Float) =
         edit(context, file) { putFloat(key, value) }
 
+    fun putStringSet(context: Context, file: String, key: String, values: Set<String>) =
+        edit(context, file) { putStringSet(key, values) }
+
     fun remove(context: Context, file: String, key: String) =
         edit(context, file) { remove(key) }
 

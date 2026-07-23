@@ -54,6 +54,9 @@ class ScizorStore internal constructor(private val context: Context) {
 
     fun contains(key: String): Boolean = cache.containsKey(prefixed(key))
 
+    /** A read-only snapshot of every persisted Scizor setting, for the Preferences browser. */
+    internal fun snapshot(): Map<String, Any> = cache.toMap()
+
     fun putBoolean(key: String, value: Boolean) {
         val full = prefixed(key)
         cache[full] = value

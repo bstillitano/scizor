@@ -25,6 +25,8 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.ListItemShapes
 import androidx.compose.material3.MaterialTheme
@@ -48,6 +50,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.scizor.ui.rememberSearchQuery
 import com.scizor.ui.EmptyState
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.Icons
 import com.scizor.ui.ScizorNavigator
@@ -115,11 +118,13 @@ internal fun PreferencesScreen(
                 PrefRow(
                     entry = entry,
                     shapes = ListItemDefaults.segmentedShapes(index = index, count = entries.size),
+                    readOnly = state.readOnly,
                     onToggleBool = { viewModel.setBoolean(entry.key, it) },
                     onClickRow = {
+                        if (state.readOnly) return@PrefRow
                         when (entry.type) {
                             "StringSet" -> navigator.push(entry.key) {
-                                StringSetScreen(viewModel.stringSet(entry.key))
+                                StringSetScreen(entry.key, viewModel)
                             }
                             "Boolean", "null", "Unknown" -> {}
                             else -> editing = entry
@@ -128,7 +133,7 @@ internal fun PreferencesScreen(
                     onDelete = { viewModel.remove(entry.key) },
                 )
             }
-            if (query.isBlank()) {
+            if (query.isBlank() && !state.readOnly) {
                 item {
                     TextButton(
                         onClick = { confirmReset = true },
@@ -136,6 +141,16 @@ internal fun PreferencesScreen(
                     ) {
                         Text("Reset “${state.selectedFile}”", color = MaterialTheme.colorScheme.error)
                     }
+                }
+            }
+            if (state.readOnly) {
+                item {
+                    Text(
+                        "Scizor's own settings, read-only.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                    )
                 }
             }
         }
@@ -181,13 +196,14 @@ private fun applyEdit(entry: PrefEntry, text: String, viewModel: PreferencesView
 private fun PrefRow(
     entry: PrefEntry,
     shapes: ListItemShapes,
+    readOnly: Boolean,
     onToggleBool: (Boolean) -> Unit,
     onClickRow: () -> Unit,
     onDelete: () -> Unit,
 ) {
     val clipboard = LocalClipboardManager.current
     var menu by remember { mutableStateOf(false) }
-    val isBool = entry.type.equals("Boolean", true)
+    val isBool = entry.type.equals("Boolean", true) && !readOnly
     Box {
         SegmentedListItem(
             shapes = shapes,
@@ -211,7 +227,9 @@ private fun PrefRow(
             DropdownMenuItem(text = { Text("Copy key & value") }, onClick = {
                 clipboard.setText(AnnotatedString("${entry.key}: ${entry.value}")); menu = false
             })
-            DropdownMenuItem(text = { Text("Delete") }, onClick = { onDelete(); menu = false })
+            if (!readOnly) {
+                DropdownMenuItem(text = { Text("Delete") }, onClick = { onDelete(); menu = false })
+            }
         }
     }
 }
@@ -254,17 +272,57 @@ private fun EditValueDialog(
 }
 
 @Composable
-private fun StringSetScreen(items: List<String>) {
-    if (items.isEmpty()) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text("Empty set.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
-        return
+private fun StringSetScreen(key: String, viewModel: PreferencesViewModel) {
+    var items by remember { mutableStateOf(viewModel.stringSet(key)) }
+    var newItem by remember { mutableStateOf("") }
+
+    fun persist(updated: List<String>) {
+        viewModel.setStringSet(key, updated.toSet())
+        items = updated
     }
+
     Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-        SectionHeader("String Set (${items.size})")
-        SegmentedColumn(items = items) { value, shapes ->
-            SegmentedListItem(shapes = shapes, colors = scizorSegmentedColors(), content = { Text(value) })
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            OutlinedTextField(
+                value = newItem,
+                onValueChange = { newItem = it },
+                label = { Text("Add item") },
+                singleLine = true,
+                modifier = Modifier.weight(1f).padding(end = 8.dp),
+            )
+            Button(
+                onClick = {
+                    val trimmed = newItem.trim()
+                    if (trimmed.isNotEmpty() && trimmed !in items) persist(items + trimmed)
+                    newItem = ""
+                },
+                enabled = newItem.isNotBlank(),
+            ) { Text("Add") }
+        }
+
+        if (items.isEmpty()) {
+            Text(
+                "Empty set.",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+            )
+        } else {
+            SectionHeader("String Set (${items.size})")
+            SegmentedColumn(items = items) { value, shapes ->
+                SegmentedListItem(
+                    shapes = shapes,
+                    colors = scizorSegmentedColors(),
+                    trailingContent = {
+                        IconButton(onClick = { persist(items - value) }) {
+                            Icon(Icons.Filled.Delete, contentDescription = "Remove")
+                        }
+                    },
+                    content = { Text(value) },
+                )
+            }
         }
     }
 }
