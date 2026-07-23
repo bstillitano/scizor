@@ -1,14 +1,4 @@
-<table width="100%">
-<tr><td align="center">
-
-**📱 Looking for the iOS version?**
-
-Scizor is the Android port of **Scyther** — the original iOS debugging toolkit.
-
-<a href="https://github.com/bstillitano/Scyther"><img src="https://img.shields.io/badge/Get%20Scyther%20for%20iOS-000000?style=for-the-badge&logo=apple&logoColor=white" alt="Scyther for iOS" /></a>
-
-</td></tr>
-</table>
+<a href="https://github.com/bstillitano/Scyther"><img src=".github/scyther-banner.svg" alt="Looking for the iOS version? Get Scyther for iOS" width="100%" /></a>
 
 <p align="center">
   <img width="200" height="200" src="Scizor.png">
