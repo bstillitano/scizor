@@ -163,14 +163,23 @@ internal object LocationSpoofer {
         _active.value = null
     }
 
-    private fun register(manager: LocationManager): Boolean = runCatching {
+    /**
+     * Installs test providers. Returns true only if at least one provider was
+     * actually registered — [LocationManager.addTestProvider] throws a
+     * SecurityException unless this app is the selected "mock location app", and
+     * that failure must surface rather than be swallowed into a false success.
+     */
+    private fun register(manager: LocationManager): Boolean {
+        var registered = false
         providers.forEach { provider ->
             runCatching {
                 manager.addTestProvider(provider, false, false, false, false, true, true, true, 1, 1)
                 manager.setTestProviderEnabled(provider, true)
+                registered = true
             }
         }
-    }.isSuccess
+        return registered
+    }
 
     private fun startPusher(manager: LocationManager) {
         pushJob?.cancel()

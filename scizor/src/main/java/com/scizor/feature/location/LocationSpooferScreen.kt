@@ -18,6 +18,7 @@ import androidx.compose.material.icons.filled.DirectionsRun
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Button
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -195,10 +196,24 @@ internal fun LocationSpooferScreen() {
         }
 
         Text(
-            "Requires 'Select mock location app' → Scizor Sample in Developer options.",
+            "Mocking requires this app to be the device's mock-location app: Developer options → " +
+                "“Select mock location app”. Enable Developer options first (tap Build number 7×).",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(horizontal = 28.dp, vertical = 12.dp),
         )
+        OutlinedButton(
+            onClick = {
+                runCatching {
+                    context.startActivity(
+                        android.content.Intent(android.provider.Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS)
+                            .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK),
+                    )
+                }
+            },
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+        ) {
+            Text("Open Developer options")
+        }
     }
 }
