@@ -1,3 +1,15 @@
+<table width="100%">
+<tr><td align="center">
+
+**📱 Looking for the iOS version?**
+
+Scizor is the Android port of **Scyther** — the original iOS debugging toolkit.
+
+<a href="https://github.com/bstillitano/Scyther"><img src="https://img.shields.io/badge/Get%20Scyther%20for%20iOS-000000?style=for-the-badge&logo=apple&logoColor=white" alt="Scyther for iOS" /></a>
+
+</td></tr>
+</table>
+
 <p align="center">
   <img width="200" height="200" src="Scizor.png">
 </p>
@@ -7,8 +19,6 @@
 ![platform-badge](https://img.shields.io/badge/platform-Android-green)
 ![language-badge](https://img.shields.io/badge/kotlin-2.2-blue)
 ![ui-badge](https://img.shields.io/badge/UI-Jetpack%20Compose-blue)
-
-> **📱 Looking for the iOS version?** It's called **[Scyther](https://github.com/bstillitano/Scyther)** — the same in-app debug toolkit, built for iOS.
 
 A comprehensive Android debugging toolkit that helps you cut through bugs in your Android app.
 Scizor gives developers, QA testers, and backend engineers an in-app debug menu — one shake
