@@ -73,7 +73,7 @@ internal fun FontsScreen() {
     }
 
     LazyColumn(
-        modifier = Modifier.fillMaxSize().padding(horizontal = SegmentInset),
+        modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap),
         contentPadding = PaddingValues(bottom = 16.dp),
     ) {
@@ -81,6 +81,7 @@ internal fun FontsScreen() {
             when (row) {
                 is FontRow.Header -> SectionHeader(row.title)
                 is FontRow.Entry -> SegmentedListItem(
+                    modifier = Modifier.padding(horizontal = SegmentInset),
                     shapes = ListItemDefaults.segmentedShapes(index = row.indexInGroup, count = row.groupCount),
                     colors = scizorSegmentedColors(),
                     supportingContent = {
