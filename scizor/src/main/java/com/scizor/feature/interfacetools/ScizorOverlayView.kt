@@ -32,6 +32,9 @@ internal class ScizorOverlayView(context: Context) : View(context) {
     /** When each active pointer went down, for the touch-duration readout. */
     private val pointerDownAt = HashMap<Int, Long>()
 
+    /** Live contact radius (px) per active pointer from MotionEvent.getTouchMajor. */
+    private val pointerRadius = HashMap<Int, Float>()
+
     /**
      * The foreground activity's decor view, used to draw view frames/sizes. Since
      * this overlay lives in its own full-screen system window, everything is drawn
@@ -119,23 +122,27 @@ internal class ScizorOverlayView(context: Context) : View(context) {
                 val id = event.getPointerId(i)
                 activePointers[id] = PointF(x(i), y(i))
                 pointerDownAt[id] = now
+                pointerRadius[id] = event.getTouchMajor(i) / 2f
                 InterfaceToolkit.logTouch(x(i), y(i))
             }
             MotionEvent.ACTION_MOVE -> {
                 for (i in 0 until event.pointerCount) {
                     val id = event.getPointerId(i)
                     activePointers[id]?.set(x(i), y(i)) ?: run { activePointers[id] = PointF(x(i), y(i)) }
+                    pointerRadius[id] = event.getTouchMajor(i) / 2f
                 }
             }
             MotionEvent.ACTION_UP, MotionEvent.ACTION_POINTER_UP -> {
                 val id = event.getPointerId(event.actionIndex)
                 activePointers.remove(id)?.let { trails.addLast(Touch(it.x, it.y, now)) }
                 pointerDownAt.remove(id)
+                pointerRadius.remove(id)
             }
             MotionEvent.ACTION_CANCEL -> {
                 activePointers.values.forEach { trails.addLast(Touch(it.x, it.y, now)) }
                 activePointers.clear()
                 pointerDownAt.clear()
+                pointerRadius.clear()
             }
         }
         invalidate()
@@ -156,17 +163,32 @@ internal class ScizorOverlayView(context: Context) : View(context) {
             InterfaceToolkit.GridColor.BLUE -> 0x40C4FF
         }
         gridPaint.color = (alpha shl 24) or rgb
-        val step = InterfaceToolkit.gridSizeDp.value * density
-        var x = step
-        while (x < width) {
-            canvas.drawLine(x, 0f, x, height.toFloat(), gridPaint)
-            x += step
-        }
-        var y = step
-        while (y < height) {
-            canvas.drawLine(0f, y, width.toFloat(), y, gridPaint)
-            y += step
-        }
+        val sizeDp = InterfaceToolkit.gridSizeDp.value
+        val step = sizeDp * density
+        if (step <= 0f) return
+        // Lines are laid out symmetrically from the screen centre, matching Scyther.
+        val cx = width / 2f
+        val cy = height / 2f
+        var x = cx
+        while (x <= width) { canvas.drawLine(x, 0f, x, height.toFloat(), gridPaint); x += step }
+        x = cx - step
+        while (x >= 0) { canvas.drawLine(x, 0f, x, height.toFloat(), gridPaint); x -= step }
+        var y = cy
+        while (y <= height) { canvas.drawLine(0f, y, width.toFloat(), y, gridPaint); y += step }
+        y = cy - step
+        while (y >= 0) { canvas.drawLine(0f, y, width.toFloat(), y, gridPaint); y -= step }
+        // Measurement labels: the centre gap size, on both axes.
+        val label = "$sizeDp dp"
+        drawGridLabel(canvas, label, cx + step / 2f, cy - 6f * density) // horizontal gap
+        drawGridLabel(canvas, label, cx + 6f * density, cy + step / 2f) // vertical gap
+    }
+
+    private fun drawGridLabel(canvas: Canvas, label: String, x: Float, y: Float) {
+        val pad = 2f * density
+        val tw = sizeLabelText.measureText(label)
+        val th = sizeLabelText.textSize
+        canvas.drawRect(x, y - th, x + tw + pad * 2, y + pad * 2, fpsBg)
+        canvas.drawText(label, x + pad, y, sizeLabelText)
     }
 
     private fun drawBounds(canvas: Canvas) {
@@ -248,7 +270,12 @@ internal class ScizorOverlayView(context: Context) : View(context) {
             canvas.drawCircle(p.x, p.y, base, touchPaint)
             touchRingPaint.color = (0xFF shl 24) or TOUCH_RGB
             canvas.drawCircle(p.x, p.y, base, touchRingPaint)
-            if (showRadius) canvas.drawCircle(p.x, p.y, base * 2.4f, touchRingPaint)
+            if (showRadius) {
+                // Use the device's real contact radius when it reports one; otherwise a
+                // visible fallback ring (emulators / mouse input report no touch major).
+                val radiusPx = pointerRadius[id] ?: 0f
+                canvas.drawCircle(p.x, p.y, if (radiusPx > base) radiusPx else base * 2.4f, touchRingPaint)
+            }
             if (showDuration) {
                 val held = now - (pointerDownAt[id] ?: now)
                 fpsText.color = (0xFF shl 24) or TOUCH_RGB

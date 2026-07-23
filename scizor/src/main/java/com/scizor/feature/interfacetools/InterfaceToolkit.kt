@@ -38,7 +38,7 @@ internal object InterfaceToolkit {
 
     // Grid settings
     private val _gridSizeDp = MutableStateFlow(8)
-    private val _gridOpacity = MutableStateFlow(13) // percent
+    private val _gridOpacity = MutableStateFlow(50) // percent
     private val _gridColor = MutableStateFlow(GridColor.RED)
     val gridSizeDp: StateFlow<Int> = _gridSizeDp
     val gridOpacity: StateFlow<Int> = _gridOpacity
@@ -54,7 +54,7 @@ internal object InterfaceToolkit {
 
     // Touch settings — toggles, matching Scyther.
     private val _showTouchDuration = MutableStateFlow(false)
-    private val _showTouchRadius = MutableStateFlow(true)
+    private val _showTouchRadius = MutableStateFlow(false)
     private val _touchLogging = MutableStateFlow(false)
     val showTouchDuration: StateFlow<Boolean> = _showTouchDuration
     val showTouchRadius: StateFlow<Boolean> = _showTouchRadius
@@ -75,11 +75,11 @@ internal object InterfaceToolkit {
         _fps.value = store.boolean("ui_fps", false)
         _slowAnimations.value = store.boolean("ui_slow", false)
         _gridSizeDp.value = int("ui_grid_size", 8)
-        _gridOpacity.value = int("ui_grid_opacity", 13)
+        _gridOpacity.value = int("ui_grid_opacity", 50)
         _gridColor.value = GridColor.entries.getOrElse(int("ui_grid_color", 0)) { GridColor.RED }
         _fpsCorner.value = Corner.entries.getOrElse(int("ui_fps_corner", 0)) { Corner.TOP_LEFT }
         _showTouchDuration.value = store.boolean("ui_touch_duration", false)
-        _showTouchRadius.value = store.boolean("ui_touch_radius_on", true)
+        _showTouchRadius.value = store.boolean("ui_touch_radius_on", false)
         _touchLogging.value = store.boolean("ui_touch_log", false)
         applySlowAnimations(_slowAnimations.value)
     }
@@ -95,8 +95,8 @@ internal object InterfaceToolkit {
         applySlowAnimations(value)
     }
 
-    fun setGridSizeDp(value: Int) = updateInt(_gridSizeDp, "ui_grid_size", value.coerceIn(2, 100))
-    fun setGridOpacity(value: Int) = updateInt(_gridOpacity, "ui_grid_opacity", value.coerceIn(2, 100))
+    fun setGridSizeDp(value: Int) = updateInt(_gridSizeDp, "ui_grid_size", value.coerceIn(1, 100))
+    fun setGridOpacity(value: Int) = updateInt(_gridOpacity, "ui_grid_opacity", value.coerceIn(1, 100))
     fun setGridColor(value: GridColor) {
         _gridColor.value = value
         store?.putString("ui_grid_color", value.ordinal.toString())

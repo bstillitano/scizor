@@ -37,9 +37,9 @@ object FeatureFlags {
     /** Remote/baseline value for a flag (its registered default). */
     fun remoteValue(key: String): Boolean = flags[key]?.defaultValue ?: false
 
-    /** Whether local overrides are honored at all. */
+    /** Whether local overrides are honored at all. Off by default, matching Scyther. */
     var overridesEnabled: Boolean
-        get() = Scizor.storeOrNull()?.boolean(OVERRIDES_ENABLED, true) ?: true
+        get() = Scizor.storeOrNull()?.boolean(OVERRIDES_ENABLED, false) ?: false
         set(value) {
             Scizor.storeOrNull()?.putBoolean(OVERRIDES_ENABLED, value)
         }
