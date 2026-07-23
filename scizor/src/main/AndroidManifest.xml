@@ -6,6 +6,10 @@
          when the user enables an overlay tool. -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
 
+    <!-- Loads OpenStreetMap tiles for the Location Spoofer map. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
     <application>
         <activity
             android:name="com.scizor.core.ScizorActivity"

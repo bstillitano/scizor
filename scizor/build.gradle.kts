@@ -51,6 +51,9 @@ dependencies {
     implementation(libs.compose.material.icons)
     debugImplementation(libs.compose.ui.tooling)
 
+    // OpenStreetMap view for the Location Spoofer map (no API key required).
+    implementation(libs.osmdroid.android)
+
     // Optional: the Deep Link Tester's QR scanner uses the Google Code Scanner when
     // present. compileOnly keeps it off Scizor's dependency footprint — consumers who
     // want QR scanning add `debugImplementation(libs.play.services.code.scanner)`.
