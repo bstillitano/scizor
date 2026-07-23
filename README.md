@@ -8,6 +8,8 @@
 ![language-badge](https://img.shields.io/badge/kotlin-2.2-blue)
 ![ui-badge](https://img.shields.io/badge/UI-Jetpack%20Compose-blue)
 
+> **📱 Looking for the iOS version?** It's called **[Scyther](https://github.com/bstillitano/Scyther)** — the same in-app debug toolkit, built for iOS.
+
 A comprehensive Android debugging toolkit that helps you cut through bugs in your Android app.
 Scizor gives developers, QA testers, and backend engineers an in-app debug menu — one shake
 away — for inspecting network traffic, flipping feature flags, switching environments, browsing
