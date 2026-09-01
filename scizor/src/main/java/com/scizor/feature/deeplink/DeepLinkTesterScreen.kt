@@ -1,12 +1,10 @@
 @file:OptIn(
-    androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class,
     androidx.compose.foundation.ExperimentalFoundationApi::class,
     androidx.compose.foundation.layout.ExperimentalLayoutApi::class,
 )
 
 package com.scizor.feature.deeplink
 
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -28,7 +26,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -42,6 +39,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.scizor.ui.ScizorListItem
 import com.scizor.ui.SectionHeader
 import com.scizor.ui.SegmentedColumn
 import com.scizor.ui.scizorSegmentedColors
@@ -126,9 +124,11 @@ internal fun DeepLinkTesterScreen() {
             SectionHeader("History")
             SegmentedColumn(items = history) { entry, shapes ->
                 var menuOpen by remember { mutableStateOf(false) }
-                SegmentedListItem(
+                ScizorListItem(
                     shapes = shapes,
                     colors = scizorSegmentedColors(),
+                    onClick = { url = entry.url },
+                    onLongClick = { menuOpen = true },
                     leadingContent = {
                         Icon(
                             if (entry.success) Icons.Filled.CheckCircle else Icons.Filled.Cancel,
@@ -150,10 +150,6 @@ internal fun DeepLinkTesterScreen() {
                             )
                         }
                     },
-                    modifier = Modifier.combinedClickable(
-                        onClick = { url = entry.url },
-                        onLongClick = { menuOpen = true },
-                    ),
                     content = { Text(entry.url, maxLines = 1, overflow = TextOverflow.Ellipsis) },
                 )
             }

@@ -1,11 +1,9 @@
 @file:OptIn(
     androidx.compose.foundation.ExperimentalFoundationApi::class,
-    androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class,
 )
 
 package com.scizor.feature.custom
 
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -13,7 +11,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -25,6 +22,7 @@ import com.scizor.ui.EmptyState
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.Icons
 import com.scizor.ui.rememberSearchQuery
+import com.scizor.ui.ScizorListItem
 import com.scizor.ui.SectionHeader
 import com.scizor.ui.SegmentedColumn
 import com.scizor.ui.scizorSegmentedColors
@@ -60,9 +58,11 @@ internal fun EnvironmentVariablesScreen(viewModel: EnvironmentVariablesViewModel
                     "Copy key & value" to "$key: $value",
                 ),
             ) { onLongClick ->
-                SegmentedListItem(
+                ScizorListItem(
                     shapes = shapes,
                     colors = scizorSegmentedColors(),
+                    onClick = null,
+                    onLongClick = onLongClick,
                     trailingContent = {
                         Text(
                             text = value,
@@ -70,7 +70,6 @@ internal fun EnvironmentVariablesScreen(viewModel: EnvironmentVariablesViewModel
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     },
-                    modifier = Modifier.combinedClickable(onClick = {}, onLongClick = onLongClick),
                     content = { Text(key) },
                 )
             }

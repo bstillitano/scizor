@@ -1,11 +1,9 @@
 @file:OptIn(
     androidx.compose.foundation.ExperimentalFoundationApi::class,
-    androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class,
 )
 
 package com.scizor.feature.keystore
 
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -18,7 +16,6 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -37,6 +34,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Key
 import com.scizor.ui.rememberSearchQuery
 import com.scizor.ui.rememberTopBarAction
+import com.scizor.ui.ScizorListItem
 import com.scizor.ui.SectionHeader
 import com.scizor.ui.SegmentedColumn
 import com.scizor.ui.scizorSegmentedColors
@@ -120,13 +118,11 @@ private fun EntryList(entries: List<KeystoreEntry>, navigator: ScizorNavigator, 
         } else {
             "—"
         }
-        SegmentedListItem(
-            modifier = Modifier.combinedClickable(
-                onClick = { navigator.push(entry.alias) { KeystoreDetailScreen(entry.alias) } },
-                onLongClick = { onDelete(entry.alias) },
-            ),
+        ScizorListItem(
             shapes = shapes,
             colors = scizorSegmentedColors(),
+            onClick = { navigator.push(entry.alias) { KeystoreDetailScreen(entry.alias) } },
+            onLongClick = { onDelete(entry.alias) },
             supportingContent = { Text("${entry.type}  ·  $created") },
             trailingContent = { Chevron() },
             content = { Text(entry.alias) },
@@ -141,14 +137,12 @@ private fun KeystoreDetailScreen(alias: String) {
     Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
         SectionHeader("Entry")
         SegmentedColumn(items = rows) { (label, value), shapes ->
-            SegmentedListItem(
+            ScizorListItem(
                 shapes = shapes,
                 colors = scizorSegmentedColors(),
+                onClick = null,
+                onLongClick = { clipboard.setText(AnnotatedString("$label: $value")) },
                 supportingContent = { Text(value, style = MaterialTheme.typography.bodySmall) },
-                modifier = Modifier.combinedClickable(
-                    onClick = {},
-                    onLongClick = { clipboard.setText(AnnotatedString("$label: $value")) },
-                ),
                 content = { Text(label) },
             )
         }

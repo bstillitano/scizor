@@ -1,11 +1,9 @@
 @file:OptIn(
     androidx.compose.foundation.ExperimentalFoundationApi::class,
-    androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class,
 )
 
 package com.scizor.feature.preferences
 
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -27,11 +25,8 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.ListItemDefaults
-import androidx.compose.material3.ListItemShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -53,11 +48,15 @@ import com.scizor.ui.EmptyState
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.Icons
+import com.scizor.ui.ScizorListItem
+import com.scizor.ui.ScizorListShapes
 import com.scizor.ui.ScizorNavigator
+import com.scizor.ui.ScizorSegmentedGap
 import com.scizor.ui.SectionHeader
 import com.scizor.ui.SegmentInset
 import com.scizor.ui.SegmentedColumn
 import com.scizor.ui.scizorSegmentedColors
+import com.scizor.ui.scizorSegmentedShapes
 
 @Composable
 internal fun PreferencesScreen(
@@ -101,7 +100,7 @@ internal fun PreferencesScreen(
 
         LazyColumn(
             modifier = Modifier.weight(1f).padding(horizontal = SegmentInset),
-            verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap),
+            verticalArrangement = Arrangement.spacedBy(ScizorSegmentedGap),
             contentPadding = PaddingValues(vertical = 12.dp),
         ) {
             if (entries.isEmpty()) {
@@ -117,7 +116,7 @@ internal fun PreferencesScreen(
             itemsIndexed(entries, key = { _, it -> it.key }) { index, entry ->
                 PrefRow(
                     entry = entry,
-                    shapes = ListItemDefaults.segmentedShapes(index = index, count = entries.size),
+                    shapes = scizorSegmentedShapes(index = index, count = entries.size),
                     readOnly = state.readOnly,
                     onToggleBool = { viewModel.setBoolean(entry.key, it) },
                     onClickRow = {
@@ -195,7 +194,7 @@ private fun applyEdit(entry: PrefEntry, text: String, viewModel: PreferencesView
 @Composable
 private fun PrefRow(
     entry: PrefEntry,
-    shapes: ListItemShapes,
+    shapes: ScizorListShapes,
     readOnly: Boolean,
     onToggleBool: (Boolean) -> Unit,
     onClickRow: () -> Unit,
@@ -205,19 +204,17 @@ private fun PrefRow(
     var menu by remember { mutableStateOf(false) }
     val isBool = entry.type.equals("Boolean", true) && !readOnly
     Box {
-        SegmentedListItem(
+        ScizorListItem(
             shapes = shapes,
             colors = scizorSegmentedColors(),
+            onClick = { if (!isBool) onClickRow() },
+            onLongClick = { menu = true },
             supportingContent = { Text("${entry.value}  ·  ${entry.type}") },
             trailingContent = {
                 if (isBool) {
                     Switch(checked = entry.value.toBoolean(), onCheckedChange = onToggleBool)
                 }
             },
-            modifier = Modifier.combinedClickable(
-                onClick = { if (!isBool) onClickRow() },
-                onLongClick = { menu = true },
-            ),
             content = { Text(entry.key) },
         )
         DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
@@ -312,7 +309,7 @@ private fun StringSetScreen(key: String, viewModel: PreferencesViewModel) {
         } else {
             SectionHeader("String Set (${items.size})")
             SegmentedColumn(items = items) { value, shapes ->
-                SegmentedListItem(
+                ScizorListItem(
                     shapes = shapes,
                     colors = scizorSegmentedColors(),
                     trailingContent = {

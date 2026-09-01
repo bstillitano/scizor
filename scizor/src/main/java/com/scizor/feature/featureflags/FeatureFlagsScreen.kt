@@ -1,11 +1,9 @@
 @file:OptIn(
     androidx.compose.foundation.ExperimentalFoundationApi::class,
-    androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class,
 )
 
 package com.scizor.feature.featureflags
 
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -19,7 +17,6 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -33,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.scizor.ui.rememberSearchQuery
+import com.scizor.ui.ScizorListItem
 import com.scizor.ui.SectionHeader
 import com.scizor.ui.SegmentedColumn
 import com.scizor.ui.scizorSegmentedColors
@@ -56,7 +54,7 @@ internal fun FeatureFlagsScreen(viewModel: FeatureFlagsViewModel = viewModel()) 
         }
         SegmentedColumn(items = globalRows) { row, shapes ->
             when (row) {
-                GlobalRow.ENABLE -> SegmentedListItem(
+                GlobalRow.ENABLE -> ScizorListItem(
                     shapes = shapes,
                     colors = scizorSegmentedColors(),
                     trailingContent = {
@@ -67,7 +65,7 @@ internal fun FeatureFlagsScreen(viewModel: FeatureFlagsViewModel = viewModel()) 
                     },
                     content = { Text("Enable overrides") },
                 )
-                GlobalRow.RESET -> SegmentedListItem(
+                GlobalRow.RESET -> ScizorListItem(
                     onClick = viewModel::resetAll,
                     shapes = shapes,
                     colors = scizorSegmentedColors(),
@@ -114,9 +112,9 @@ private fun FlagList(flags: List<FlagUi>, viewModel: FeatureFlagsViewModel) {
     SegmentedColumn(items = flags) { flag, shapes ->
         var pinMenu by remember { mutableStateOf(false) }
         Box {
-            SegmentedListItem(
+            ScizorListItem(
                 onLongClick = { pinMenu = true },
-                onClick = {},
+                onClick = null,
                 shapes = shapes,
                 colors = scizorSegmentedColors(),
                 supportingContent = { Text("Remote: ${flag.remoteValue}") },

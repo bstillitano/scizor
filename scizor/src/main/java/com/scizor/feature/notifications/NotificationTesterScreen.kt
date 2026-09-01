@@ -1,5 +1,3 @@
-@file:OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
-
 package com.scizor.feature.notifications
 
 import android.content.Intent
@@ -21,7 +19,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -38,6 +35,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.scizor.ui.rememberTopBarAction
 import com.scizor.ui.rememberTopBarSubtitle
+import com.scizor.ui.ScizorListItem
 import com.scizor.ui.SectionHeader
 import com.scizor.ui.SegmentedColumn
 import com.scizor.ui.scizorSegmentedColors
@@ -157,7 +155,7 @@ internal fun NotificationTesterScreen() {
                 OutlinedButton(onClick = { NotificationTester.cancelAll() }) { Text("Cancel all") }
             }
             SegmentedColumn(items = scheduled) { item, shapes ->
-                SegmentedListItem(
+                ScizorListItem(
                     shapes = shapes,
                     colors = scizorSegmentedColors(),
                     overlineContent = {

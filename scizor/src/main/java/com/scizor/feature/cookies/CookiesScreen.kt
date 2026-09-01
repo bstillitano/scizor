@@ -1,11 +1,9 @@
 @file:OptIn(
     androidx.compose.foundation.ExperimentalFoundationApi::class,
-    androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class,
 )
 
 package com.scizor.feature.cookies
 
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -23,7 +21,6 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -41,6 +38,7 @@ import com.scizor.ui.EmptyState
 import com.scizor.ui.ScizorNavigator
 import com.scizor.ui.rememberSearchQuery
 import com.scizor.ui.rememberTopBarAction
+import com.scizor.ui.ScizorListItem
 import com.scizor.ui.SectionHeader
 import com.scizor.ui.SegmentedColumn
 import com.scizor.ui.scizorSegmentedColors
@@ -75,9 +73,11 @@ internal fun CookiesScreen(navigator: ScizorNavigator) {
         SegmentedColumn(items = cookies) { cookie, shapes ->
             var menuOpen by remember { mutableStateOf(false) }
             Box {
-                SegmentedListItem(
+                ScizorListItem(
                     shapes = shapes,
                     colors = scizorSegmentedColors(),
+                    onClick = { navigator.push(cookie.name) { CookieDetailScreen(cookie) } },
+                    onLongClick = { menuOpen = true },
                     overlineContent = { Text(cookie.host) },
                     leadingContent = {
                         Icon(
@@ -88,10 +88,6 @@ internal fun CookiesScreen(navigator: ScizorNavigator) {
                     },
                     supportingContent = { Text(cookie.value, maxLines = 1, overflow = TextOverflow.Ellipsis) },
                     trailingContent = { Chevron() },
-                    modifier = Modifier.combinedClickable(
-                        onClick = { navigator.push(cookie.name) { CookieDetailScreen(cookie) } },
-                        onLongClick = { menuOpen = true },
-                    ),
                     content = { Text(cookie.name) },
                 )
                 DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
@@ -144,14 +140,12 @@ private fun CookieDetailScreen(cookie: Cookie) {
     Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
         SectionHeader("Cookie")
         SegmentedColumn(items = rows) { (label, value), shapes ->
-            SegmentedListItem(
+            ScizorListItem(
                 shapes = shapes,
                 colors = scizorSegmentedColors(),
+                onClick = null,
+                onLongClick = { clipboard.setText(AnnotatedString("$label: $value")) },
                 supportingContent = { Text(value) },
-                modifier = Modifier.combinedClickable(
-                    onClick = {},
-                    onLongClick = { clipboard.setText(AnnotatedString("$label: $value")) },
-                ),
                 content = { Text(label) },
             )
         }

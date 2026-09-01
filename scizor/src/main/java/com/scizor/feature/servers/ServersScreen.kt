@@ -1,11 +1,9 @@
 @file:OptIn(
     androidx.compose.foundation.ExperimentalFoundationApi::class,
-    androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class,
 )
 
 package com.scizor.feature.servers
 
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -18,7 +16,6 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -34,6 +31,7 @@ import com.scizor.ui.CopyMenuHost
 import com.scizor.ui.EmptyState
 import androidx.compose.material.icons.filled.Dns
 import com.scizor.ui.rememberSearchQuery
+import com.scizor.ui.ScizorListItem
 import com.scizor.ui.SectionHeader
 import com.scizor.ui.SegmentedColumn
 import com.scizor.ui.scizorSegmentedColors
@@ -80,7 +78,7 @@ internal fun ServersScreen(viewModel: ServersViewModel = viewModel()) {
         } else {
             SegmentedColumn(items = configs) { environment, shapes ->
                 val isSelected = environment.name == state.selectedName
-                SegmentedListItem(
+                ScizorListItem(
                     onClick = { viewModel.select(environment) },
                     shapes = shapes,
                     colors = scizorSegmentedColors(),
@@ -103,11 +101,12 @@ internal fun ServersScreen(viewModel: ServersViewModel = viewModel()) {
                 CopyMenuHost(
                     options = listOf("Copy value" to value, "Copy key & value" to "$key: $value"),
                 ) { onLongClick ->
-                    SegmentedListItem(
+                    ScizorListItem(
                         shapes = shapes,
                         colors = scizorSegmentedColors(),
+                        onClick = null,
+                        onLongClick = onLongClick,
                         supportingContent = { Text(value) },
-                        modifier = Modifier.combinedClickable(onClick = {}, onLongClick = onLongClick),
                         content = { Text(key) },
                     )
                 }
