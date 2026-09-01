@@ -2,14 +2,22 @@ package com.scizor.sample
 
 import android.app.Application
 import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import android.provider.Settings
 import android.util.Log
 import android.widget.Toast
 import com.scizor.Scizor
 import com.scizor.feature.custom.DeveloperOption
+import com.scizor.feature.custom.ScizorIcon
 import com.scizor.feature.featureflags.FeatureFlag
 import com.scizor.feature.servers.ServerEnvironment
 
 class SampleApp : Application() {
+
+    /** Host-owned state behind the sample's [DeveloperOption.Toggle]. */
+    private var verboseLogging: Boolean = false
+
     override fun onCreate() {
         super.onCreate()
         Scizor.start(this)
@@ -82,6 +90,9 @@ class SampleApp : Application() {
             com.scizor.feature.deeplink.DeepLinkPreset("Example.com", "https://example.com"),
         )
 
+        // One of each DeveloperOption kind, so every branch of the menu's row
+        // rendering — including the host-backed toggle and the resource icon — is
+        // actually exercised when the sample runs, not only at compile time.
         Scizor.developerOptions = listOf(
             DeveloperOption.Action(title = "Log a test message") {
                 Log.i("ScizorSample", "Test log from developer option")
@@ -89,6 +100,30 @@ class SampleApp : Application() {
             DeveloperOption.Action(title = "Show a toast") {
                 Toast.makeText(this, "Hello from Scizor", Toast.LENGTH_SHORT).show()
             },
+            DeveloperOption.Toggle(
+                title = "Verbose logging",
+                checked = { verboseLogging },
+                onCheckedChange = { verboseLogging = it },
+                subtitle = "Backed by a plain var in SampleApp",
+            ),
+            DeveloperOption.Action(
+                title = "Open app info",
+                subtitle = "Dismisses the menu first",
+                dismissOnClick = true,
+                onClick = {
+                    startActivity(
+                        Intent(
+                            Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                            Uri.fromParts("package", packageName, null),
+                        ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                    )
+                },
+            ),
+            DeveloperOption.Value(
+                title = "Sample build",
+                value = "demo",
+                icon = ScizorIcon.Resource(android.R.drawable.ic_dialog_info),
+            ),
         )
 
         seedDemoCookies()
