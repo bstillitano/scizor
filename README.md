@@ -102,9 +102,10 @@ The debug menu mirrors the iOS Scyther layout, grouped into sections.
 
 ### Build-time toolchain
 
-Scizor's menu is built on **stable** Compose UI and **stable** Material 3 — it no longer
-pulls your app's debug variant onto a prerelease Compose or Material 3. Your app must still
-build against:
+Scizor's menu is built on Material 3 **Expressive**, whose `SegmentedListItem` gives the
+grouped rows their look. Those components live only in `material3` 1.5.0-alpha, so Scizor
+depends on a prerelease Material 3 and your app will resolve it too — see the note below
+before adopting. Your app must build against:
 
 | Tool | Version |
 |---|---|
@@ -112,17 +113,28 @@ build against:
 | Android Gradle Plugin | 9.1+ |
 | Gradle | 9.3+ |
 | `compileSdk` | 37 |
-| Jetpack Compose | 1.12.0 |
-| Compose Material 3 | 1.4.0 |
+| Jetpack Compose | 1.12.0 (stable) |
+| Compose Material 3 | 1.5.0-alpha27 (prerelease) |
 | JDK | 17 |
 
 The menu renders on every device down to `minSdk` 24 — this is a **build-time** requirement,
 not a runtime one.
 
-Nothing in Scizor's own API needs `compileSdk` 37, AGP 9.1 or Gradle 9.3 any more: those rows
-are simply what this repository currently builds with, and an AAR published from a newer
-`compileSdk` cannot be consumed by an older one. If you need Scizor on an older toolchain, the
-change is to this repository's build configuration, not to any library it depends on.
+`compileSdk` 37, AGP 9.1 and Gradle 9.3 are what this repository builds with, and an AAR
+published from a newer `compileSdk` cannot be consumed by an older one. If you need Scizor on
+an older toolchain, that is a change to this repository's build configuration.
+
+**The Material 3 row is different, and worth understanding before you adopt.** Scizor declares
+`material3` as an `implementation` dependency, which lands in its published POM at `runtime`
+scope. Gradle resolves version conflicts by taking the **highest** version in the graph, so a
+consumer on stable Material 3 who adds Scizor gets `1.5.0-alpha27` across their whole debug
+variant — a different Material 3 in debug than in release. You cannot pin it back down either:
+forcing `1.4.0` makes Scizor's compiled calls to `SegmentedListItem` fail at runtime with
+`NoSuchMethodError`.
+
+If that trade is not one you want, `v0.1.0` builds against stable Material 3 1.4.0 and is
+unaffected. It reproduces the segmented look on the stable `ListItem` instead of using the
+Expressive component. When `material3` 1.5.0 ships stable this distinction disappears.
 
 ## Installation
 
