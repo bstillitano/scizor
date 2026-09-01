@@ -66,6 +66,15 @@ internal fun migratePreferences(source: Preferences, destination: MutablePrefere
  * deletes the legacy file. The completion flag is stored in the destination, so
  * clearing the source can never cause the migration to run a second time.
  *
+ * The move is deliberately timid, because its only failure mode is data loss.
+ * The legacy file is deleted only after its contents have been read *and*
+ * written to the destination: a read that fails is retried on the next launch
+ * rather than treated as "there was nothing there". And when the two locations
+ * resolve to the same file — which is what happens when
+ * `createDeviceProtectedStorageContext()` is unavailable and [deviceContext]
+ * falls back to the ordinary one — the migration is skipped outright, since
+ * "migrating" a file onto itself can only ever destroy it.
+ *
  * All keys are namespaced with [PREFIX] (`scizor_`) so Scizor never collides with
  * the host app's own preferences. A small in-memory cache backs the synchronous
  * getters used by feature flags and server selection; writes are applied to the
@@ -82,9 +91,11 @@ class ScizorStore internal constructor(context: Context) {
 
     private val legacyFile = File(context.filesDir, DATASTORE_PATH)
 
+    private val storeFile = File(deviceContext.filesDir, DATASTORE_PATH)
+
     private val dataStore: DataStore<Preferences> = PreferenceDataStoreFactory.create(
         scope = scope,
-        produceFile = { File(deviceContext.filesDir, DATASTORE_PATH) },
+        produceFile = { storeFile },
     )
 
     /** Loads all persisted values into the cache. Safe to call from app start. */
@@ -104,27 +115,89 @@ class ScizorStore internal constructor(context: Context) {
      * Runs [migratePreferences] once, then records that it has happened.
      *
      * The flag is written into the destination so that clearing the legacy
-     * location cannot cause a second run.
+     * location cannot cause a second run. The legacy file is removed only once
+     * its contents are safely in the destination — see [LegacyRead].
      */
     private suspend fun migrateIfNeeded() {
         val migrated = booleanPreferencesKey(MIGRATION_KEY)
         if (dataStore.data.first()[migrated] == true) return
 
-        val legacy = readLegacy()
-        dataStore.edit { destination ->
-            if (legacy != null) migratePreferences(legacy, destination)
-            destination[migrated] = true
+        // Source and destination can be the same file: `deviceContext` falls back to
+        // the ordinary context when device-protected storage is unavailable, and then
+        // both paths are `filesDir/DATASTORE_PATH`. Reading that as a "legacy" file
+        // opens a second DataStore on a file that already has one, which DataStore
+        // refuses — and the old code read that failure as "no legacy data" and deleted
+        // the live settings. Compare resolved paths rather than the contexts, so the
+        // guard covers every way the two can coincide, not just the known one.
+        if (isSameFile(legacyFile, storeFile)) {
+            dataStore.edit { it[migrated] = true }
+            return
         }
-        legacyFile.delete()
+
+        when (val legacy = readLegacy()) {
+            LegacyRead.Absent -> dataStore.edit { it[migrated] = true }
+
+            // The file is there but could not be read. Keep it, and leave the flag
+            // unset so the next launch tries again; deleting now would throw away
+            // data that a later read may well recover.
+            LegacyRead.Unreadable -> Unit
+
+            is LegacyRead.Loaded -> {
+                dataStore.edit { destination ->
+                    migratePreferences(legacy.preferences, destination)
+                    destination[migrated] = true
+                }
+                legacyFile.delete()
+            }
+        }
     }
 
-    /** Reads the pre-migration DataStore file, or null if there isn't one. */
-    private suspend fun readLegacy(): Preferences? {
-        if (!legacyFile.exists()) return null
-        return runCatching {
-            PreferenceDataStoreFactory.create(produceFile = { legacyFile }).data.first()
-        }.getOrNull()
+    /**
+     * Outcome of reading the pre-migration DataStore file.
+     *
+     * [Absent] and [Unreadable] have to be told apart: only the first means the
+     * legacy file can be discarded.
+     */
+    private sealed interface LegacyRead {
+
+        /** No legacy file exists — the migration has nothing to do. */
+        data object Absent : LegacyRead
+
+        /** A legacy file exists but could not be read. Its data may still be recoverable. */
+        data object Unreadable : LegacyRead
+
+        /** The legacy file was read in full. */
+        data class Loaded(val preferences: Preferences) : LegacyRead
     }
+
+    /** Reads the pre-migration DataStore file. */
+    private suspend fun readLegacy(): LegacyRead {
+        if (!legacyFile.exists()) return LegacyRead.Absent
+        // A private job, torn down as soon as the read finishes, so DataStore stops
+        // treating the legacy file as having a live instance in this process.
+        val legacyJob = SupervisorJob()
+        val legacyScope = CoroutineScope(legacyJob + Dispatchers.IO)
+        return try {
+            runCatching {
+                val legacy = PreferenceDataStoreFactory.create(
+                    scope = legacyScope,
+                    produceFile = { legacyFile },
+                )
+                LegacyRead.Loaded(legacy.data.first())
+            }.getOrDefault(LegacyRead.Unreadable)
+        } finally {
+            legacyJob.cancel()
+            legacyJob.join()
+        }
+    }
+
+    /**
+     * True when [a] and [b] name the same file on disk. Falls back to comparing
+     * absolute paths if either canonical path cannot be resolved.
+     */
+    private fun isSameFile(a: File, b: File): Boolean = runCatching {
+        a.canonicalPath == b.canonicalPath
+    }.getOrDefault(a.absolutePath == b.absolutePath)
 
     fun boolean(key: String, default: Boolean): Boolean {
         return cache[prefixed(key)] as? Boolean ?: default
@@ -179,7 +252,7 @@ class ScizorStore internal constructor(context: Context) {
         const val PREFIX = "scizor_"
 
         /** Path of the DataStore file, relative to whichever `filesDir` hosts it. */
-        private const val DATASTORE_PATH = "datastore/scizor_settings.preferences_pb"
+        internal const val DATASTORE_PATH = "datastore/scizor_settings.preferences_pb"
 
         /** Records that the one-time move out of credential-encrypted storage has run. */
         private const val MIGRATION_KEY = "scizor_defaults_did_migrate"
