@@ -70,7 +70,10 @@ internal class MenuViewModel : ViewModel() {
                     title = option.title,
                     subtitle = option.subtitle,
                     icon = icon,
-                    action = MenuAction.Run(option.onClick),
+                    action = MenuAction.Run {
+                        if (option.dismissOnClick) Scizor.dismiss()
+                        option.onClick()
+                    },
                 )
             }
         }

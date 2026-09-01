@@ -64,11 +64,21 @@ class ScizorActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        com.scizor.Scizor.activityRef = java.lang.ref.WeakReference(this)
         setContent {
             ScizorTheme {
                 ScizorHost(onClose = { finish() })
             }
         }
+    }
+
+    override fun onDestroy() {
+        // Only clear our own registration — a configuration change creates the
+        // new instance before destroying the old one.
+        if (com.scizor.Scizor.activityRef?.get() === this) {
+            com.scizor.Scizor.activityRef = null
+        }
+        super.onDestroy()
     }
 }
 

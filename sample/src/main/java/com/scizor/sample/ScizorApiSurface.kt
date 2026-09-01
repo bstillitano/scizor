@@ -37,6 +37,7 @@ internal fun scizorApiSurface(application: Application) {
     // Facade
     Scizor.start(application)
     Scizor.show()
+    Scizor.dismiss()
     val wrapped: android.content.Context = Scizor.wrapAppearance(application)
     Scizor.invocationGesture = ScizorGesture.SHAKE
     Scizor.invocationGesture = ScizorGesture.FLOATING_BUTTON

@@ -1,6 +1,7 @@
 package com.scizor
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -32,5 +33,42 @@ class ScizorFacadeTest {
         // reset for other tests / callers
         Scizor.invocationGesture = ScizorGesture.SHAKE
         assertTrue(Scizor.invocationGesture == ScizorGesture.SHAKE)
+    }
+
+    @Test
+    fun `dismiss is a no-op when the menu is not open`() {
+        val app = RuntimeEnvironment.getApplication()
+        Scizor.start(app)
+
+        // No activity is live; this must not throw.
+        Scizor.dismiss()
+    }
+
+    @Test
+    fun `dismiss finishes a live menu activity`() {
+        val app = RuntimeEnvironment.getApplication()
+        Scizor.start(app)
+
+        val controller = org.robolectric.Robolectric
+            .buildActivity(com.scizor.core.ScizorActivity::class.java)
+            .setup()
+
+        assertFalse(controller.get().isFinishing)
+        Scizor.dismiss()
+        assertTrue(controller.get().isFinishing)
+    }
+
+    @Test
+    fun `dismiss does not retain the activity after it is destroyed`() {
+        val app = RuntimeEnvironment.getApplication()
+        Scizor.start(app)
+
+        org.robolectric.Robolectric
+            .buildActivity(com.scizor.core.ScizorActivity::class.java)
+            .setup()
+            .destroy()
+
+        // Reference cleared in onDestroy; nothing to finish, and no throw.
+        Scizor.dismiss()
     }
 }

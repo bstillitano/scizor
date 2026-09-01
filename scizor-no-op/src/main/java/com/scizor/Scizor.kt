@@ -47,4 +47,6 @@ object Scizor {
     fun wrapAppearance(base: android.content.Context): android.content.Context = base
 
     fun show() = Unit
+
+    fun dismiss() = Unit
 }

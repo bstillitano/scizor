@@ -37,6 +37,13 @@ object Scizor {
     private var application: Application? = null
     private var shakeDetector: ShakeDetector? = null
 
+    /**
+     * The live menu activity, if one is open.
+     *
+     * Weak so a missed [ScizorActivity.onDestroy] can never leak an activity.
+     */
+    internal var activityRef: java.lang.ref.WeakReference<ScizorActivity>? = null
+
     internal lateinit var store: ScizorStore
         private set
 
@@ -123,6 +130,11 @@ object Scizor {
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             context.startActivity(intent)
         }
+    }
+
+    /** Closes the debug menu if it is open. No-op otherwise. */
+    fun dismiss() {
+        activityRef?.get()?.finish()
     }
 
     private fun applyInvocationGesture(context: Context) {

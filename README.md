@@ -240,9 +240,12 @@ takes an optional `subtitle` and `icon` (a `ScizorIcon.Vector` or `ScizorIcon.Re
 
 ```kotlin
 Scizor.developerOptions = listOf(
-    // A runnable action. `dismissOnClick` is reserved for actions that navigate into
-    // the host app (a deep link, a screen, a permission prompt).
+    // A runnable action. Set `dismissOnClick = true` for actions that navigate into
+    // the host app (a deep link, a screen, a permission prompt) so the menu closes
+    // itself first — shorthand for calling `Scizor.dismiss()` as the first line of
+    // `onClick`.
     DeveloperOption.Action(title = "Reset onboarding") { resetOnboarding() },
+    DeveloperOption.Action(title = "Open profile", dismissOnClick = true) { openProfile() },
 
     // A read-only label/value pair.
     DeveloperOption.Value(title = "Build", value = BuildConfig.VERSION_NAME),
@@ -253,7 +256,13 @@ Scizor.developerOptions = listOf(
     // An on/off switch backed by the host's own store. `checked` is a lambda, not a
     // `Boolean`, so the host's store stays the source of truth — the row re-reads it
     // on every recomposition instead of snapshotting whatever was true when it was
-    // registered.
+    // registered. `checked` must be a stable, cheap, side-effect-free read: it is
+    // called on every composition, so back-to-back calls must return the same value —
+    // never derive it from a clock, `Random`, or anything else that changes per call,
+    // or the row will keep recomposing itself. `onCheckedChange` is assumed synchronous
+    // with `checked`: the row writes through and immediately re-reads `checked` to show
+    // what was actually stored, so a host that persists asynchronously will briefly
+    // show the old value.
     DeveloperOption.Toggle(
         title = "Bypass PIN rules",
         checked = { MyDebugStore.bypassPinRules },
@@ -261,6 +270,9 @@ Scizor.developerOptions = listOf(
     ),
 )
 ```
+
+Call `Scizor.dismiss()` directly to close the menu from anywhere, or set `dismissOnClick` on an
+`Action` for the common case above.
 
 ### Environment Variables
 
@@ -366,6 +378,7 @@ still resolve to their registered defaults, so any host logic that reads them ke
 |---|---|
 | `Scizor.start(app)` | Initialise the toolkit |
 | `Scizor.show()` | Open the menu manually |
+| `Scizor.dismiss()` | Close the menu if it is open; no-op otherwise |
 | `Scizor.invocationGesture` | `SHAKE` / `FLOATING_BUTTON` / `NONE` |
 | `Scizor.network.interceptor()` | OkHttp interceptor for logging |
 | `Scizor.featureFlags` | `register`, `isEnabled`, `override` |
