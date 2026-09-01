@@ -31,6 +31,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -173,13 +174,43 @@ internal const val LOADING_PLACEHOLDER = "Loading…"
 private fun ToggleSegment(row: MenuRow.Toggle, shapes: ScizorListShapes) {
     val flow = row.flow
     if (flow != null) {
+        // The StateFlow itself is the live subscription: collecting it is what makes
+        // this branch move immediately and stay in sync on any recomposition.
         val checked by flow.collectAsStateWithLifecycle()
-        ToggleSegmentContent(row, shapes, checked)
+        ToggleSegmentContent(row, shapes, checked, onToggle = row.onChange)
     } else {
-        // Invoked during composition, so the row reflects the host's own store
-        // whenever the menu recomposes rather than snapshotting at registration.
-        ToggleSegmentContent(row, shapes, row.checked?.invoke() ?: false)
+        ToggleSegmentHostBacked(row, shapes)
     }
+}
+
+/**
+ * Renders a host-backed toggle (`row.checked` / `row.onChange`, no [StateFlow]).
+ *
+ * `row.checked` is a plain function call, not a snapshot-`State` read, so nothing
+ * subscribes Compose to it — calling it during composition alone does not cause a
+ * recomposition when the host's own store changes. Local state mirrors it instead:
+ * seeded from the host on first composition (or when [MenuRow.id] changes, so the
+ * row resets if a different option lands at the same list position), written through
+ * and then re-read from the host on every tap so the switch always shows what the
+ * host actually stored rather than what was requested, and resynced by [SideEffect]
+ * after every composition of this row so an external change to the host's store is
+ * still picked up whenever the menu genuinely recomposes.
+ */
+@Composable
+private fun ToggleSegmentHostBacked(row: MenuRow.Toggle, shapes: ScizorListShapes) {
+    val readHost = { row.checked?.invoke() ?: false }
+    var checked by remember(row.id) { mutableStateOf(readHost()) }
+    SideEffect { checked = readHost() }
+    ToggleSegmentContent(
+        row = row,
+        shapes = shapes,
+        checked = checked,
+        onToggle = { requested ->
+            row.onChange(requested)
+            // Reflect what the host actually stored, not what was requested.
+            checked = readHost()
+        },
+    )
 }
 
 @Composable
@@ -187,6 +218,7 @@ private fun ToggleSegmentContent(
     row: MenuRow.Toggle,
     shapes: ScizorListShapes,
     checked: Boolean,
+    onToggle: (Boolean) -> Unit,
 ) {
     ScizorListItem(
         shapes = shapes,
@@ -195,8 +227,8 @@ private fun ToggleSegmentContent(
         ),
         leadingContent = { LeadingIcon(row.icon) },
         supportingContent = row.subtitle?.let { { Text(it) } },
-        trailingContent = { Switch(checked = checked, onCheckedChange = row.onChange) },
-        onClick = { row.onChange(!checked) },
+        trailingContent = { Switch(checked = checked, onCheckedChange = onToggle) },
+        onClick = { onToggle(!checked) },
         onLongClick = {},
         content = { Text(row.title) },
     )
