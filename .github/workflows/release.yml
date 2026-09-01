@@ -34,7 +34,12 @@ jobs:
           generate_release_notes: true
 
       - name: Ask JitPack to build the tag
+        # JitPack's build API is /api/builds/{group}/{artifact}/{version}, so each
+        # module needs its own call. -f is what makes a 404 an error: without it curl
+        # exits 0 on any HTTP status and the fallback below can never fire.
         run: |
-          curl -sS -m 300 \
-            "https://jitpack.io/api/builds/com.github.bstillitano.scizor/${GITHUB_REF_NAME}" \
-            || echo "JitPack build request returned non-zero; check https://jitpack.io/#bstillitano/scizor"
+          for artifact in scizor scizor-no-op; do
+            curl -fsS -m 300 \
+              "https://jitpack.io/api/builds/com.github.bstillitano.scizor/${artifact}/${GITHUB_REF_NAME}" \
+              || echo "JitPack build request for ${artifact} failed; check https://jitpack.io/#bstillitano/scizor"
+          done
