@@ -101,8 +101,9 @@ The debug menu mirrors the iOS Scyther layout, grouped into sections.
 
 ### Build-time toolchain
 
-Scizor's menu is built with Material 3 Expressive (the real `SegmentedListItem`), which
-currently pulls a recent toolchain. Your app must build against:
+Scizor's menu is built on **stable** Compose UI and **stable** Material 3 — it no longer
+pulls your app's debug variant onto a prerelease Compose or Material 3. Your app must still
+build against:
 
 | Tool | Version |
 |---|---|
@@ -110,8 +111,8 @@ currently pulls a recent toolchain. Your app must build against:
 | Android Gradle Plugin | 9.1+ |
 | Gradle | 9.3+ |
 | `compileSdk` | 37 |
-| Jetpack Compose | 1.12.0-beta02 |
-| Compose Material 3 | 1.5.0-alpha24 |
+| Jetpack Compose | 1.12.0 |
+| Compose Material 3 | 1.4.0 |
 | JDK | 17 |
 
 The menu renders on every device down to `minSdk` 24 — this is a **build-time** requirement,
