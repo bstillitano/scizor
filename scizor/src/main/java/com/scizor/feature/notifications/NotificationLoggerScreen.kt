@@ -1,5 +1,4 @@
 @file:OptIn(
-    androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class,
     androidx.compose.foundation.ExperimentalFoundationApi::class,
 )
 
@@ -8,7 +7,6 @@ package com.scizor.feature.notifications
 import android.content.Intent
 import android.provider.Settings
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.rememberScrollState
@@ -20,7 +18,6 @@ import androidx.compose.material.icons.filled.NotificationsOff
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -35,6 +32,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.scizor.ui.rememberSearchQuery
 import com.scizor.ui.rememberTopBarAction
 import com.scizor.ui.rememberTopBarSubtitle
+import com.scizor.ui.ScizorListItem
 import com.scizor.ui.ScizorNavigator
 import com.scizor.ui.EmptyState
 import androidx.compose.material.icons.filled.NotificationsNone
@@ -92,7 +90,7 @@ internal fun NotificationLoggerScreen(navigator: ScizorNavigator) {
     Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
         SectionHeader("Logged (${items.size})")
         SegmentedColumn(items = items) { notification, shapes ->
-            SegmentedListItem(
+            ScizorListItem(
                 shapes = shapes,
                 colors = scizorSegmentedColors(),
                 overlineContent = {
@@ -135,14 +133,12 @@ private fun NotificationDetailScreen(id: Long) {
     Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
         SectionHeader("Details")
         SegmentedColumn(items = fields) { (label, value), shapes ->
-            SegmentedListItem(
+            ScizorListItem(
                 shapes = shapes,
                 colors = scizorSegmentedColors(),
                 supportingContent = { Text(value, style = MaterialTheme.typography.bodyMedium) },
-                modifier = Modifier.combinedClickable(
-                    onClick = {},
-                    onLongClick = { clipboard.setText(AnnotatedString("$label: $value")) },
-                ),
+                onClick = null,
+                onLongClick = { clipboard.setText(AnnotatedString("$label: $value")) },
                 content = { Text(label, color = MaterialTheme.colorScheme.primary) },
             )
         }
@@ -150,21 +146,19 @@ private fun NotificationDetailScreen(id: Long) {
         if (notification.actions.isNotEmpty()) {
             SectionHeader("Actions")
             SegmentedColumn(items = notification.actions) { action, shapes ->
-                SegmentedListItem(shapes = shapes, colors = scizorSegmentedColors(), content = { Text(action) })
+                ScizorListItem(shapes = shapes, colors = scizorSegmentedColors(), content = { Text(action) })
             }
         }
 
         if (notification.extras.isNotEmpty()) {
             SectionHeader("Raw extras")
             SegmentedColumn(items = notification.extras) { (key, value), shapes ->
-                SegmentedListItem(
+                ScizorListItem(
                     shapes = shapes,
                     colors = scizorSegmentedColors(),
                     supportingContent = { Text(value, style = MaterialTheme.typography.bodySmall) },
-                    modifier = Modifier.combinedClickable(
-                        onClick = {},
-                        onLongClick = { clipboard.setText(AnnotatedString("$key: $value")) },
-                    ),
+                    onClick = null,
+                    onLongClick = { clipboard.setText(AnnotatedString("$key: $value")) },
                     content = { Text(key, style = MaterialTheme.typography.labelMedium) },
                 )
             }

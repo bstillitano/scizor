@@ -1,5 +1,3 @@
-@file:OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
-
 package com.scizor.feature.fonts
 
 import android.graphics.Typeface
@@ -11,9 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -23,6 +19,8 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import com.scizor.ui.ScizorListItem
+import com.scizor.ui.ScizorSegmentedGap
 import com.scizor.ui.SectionHeader
 import com.scizor.ui.EmptyState
 import androidx.compose.material.icons.filled.TextFields
@@ -30,6 +28,7 @@ import androidx.compose.material.icons.Icons
 import com.scizor.ui.SegmentInset
 import com.scizor.ui.rememberSearchQuery
 import com.scizor.ui.scizorSegmentedColors
+import com.scizor.ui.scizorSegmentedShapes
 
 private sealed interface FontRow {
     data class Header(val title: String) : FontRow
@@ -74,15 +73,15 @@ internal fun FontsScreen() {
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap),
+        verticalArrangement = Arrangement.spacedBy(ScizorSegmentedGap),
         contentPadding = PaddingValues(bottom = 16.dp),
     ) {
         itemsIndexed(rows) { _, row ->
             when (row) {
                 is FontRow.Header -> SectionHeader(row.title)
-                is FontRow.Entry -> SegmentedListItem(
+                is FontRow.Entry -> ScizorListItem(
                     modifier = Modifier.padding(horizontal = SegmentInset),
-                    shapes = ListItemDefaults.segmentedShapes(index = row.indexInGroup, count = row.groupCount),
+                    shapes = scizorSegmentedShapes(index = row.indexInGroup, count = row.groupCount),
                     colors = scizorSegmentedColors(),
                     supportingContent = {
                         AndroidView(

@@ -1,5 +1,3 @@
-@file:OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
-
 package com.scizor.feature.appearance
 
 import androidx.compose.foundation.layout.Column
@@ -14,7 +12,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.SettingsBackupRestore
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
-import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -23,6 +20,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.scizor.ui.ScizorListItem
 import com.scizor.ui.SectionHeader
 import com.scizor.ui.SegmentedColumn
 import com.scizor.ui.rememberTopBarAction
@@ -40,7 +38,7 @@ internal fun AppearanceScreen() {
         SectionHeader("Theme")
         SegmentedColumn(items = AppearanceMode.entries.toList()) { option, shapes ->
             val selected = option == mode
-            SegmentedListItem(
+            ScizorListItem(
                 shapes = shapes,
                 colors = scizorSegmentedColors(),
                 leadingContent = {
@@ -76,7 +74,7 @@ internal fun AppearanceScreen() {
 
         SectionHeader("Accessibility")
         SegmentedColumn(items = listOf("contrast")) { _, shapes ->
-            SegmentedListItem(
+            ScizorListItem(
                 shapes = shapes,
                 colors = scizorSegmentedColors(),
                 supportingContent = { Text("Flag hosts can read for high-contrast styling") },

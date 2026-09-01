@@ -1,5 +1,3 @@
-@file:OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
-
 package com.scizor.feature.location
 
 import android.widget.Toast
@@ -24,7 +22,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -44,6 +41,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.scizor.ui.rememberSearchQuery
 import com.scizor.ui.rememberTopBarAction
+import com.scizor.ui.ScizorListItem
 import com.scizor.ui.SectionHeader
 import com.scizor.ui.SegmentedColumn
 import com.scizor.ui.scizorSegmentedColors
@@ -161,7 +159,7 @@ internal fun LocationSpooferScreen() {
     Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
         SectionHeader("Mock location")
         SegmentedColumn(items = listOf("master")) { _, shapes ->
-            SegmentedListItem(
+            ScizorListItem(
                 shapes = shapes,
                 colors = scizorSegmentedColors(),
                 supportingContent = {
@@ -197,7 +195,7 @@ internal fun LocationSpooferScreen() {
                 apply(la, lo, "Dropped pin")
             }
             SegmentedColumn(items = listOf(mock)) { m, shapes ->
-                SegmentedListItem(
+                ScizorListItem(
                     shapes = shapes,
                     colors = scizorSegmentedColors(),
                     leadingContent = {
@@ -239,7 +237,7 @@ internal fun LocationSpooferScreen() {
 
             SectionHeader("Routes")
             SegmentedColumn(items = LocationSpoofer.routes) { route, shapes ->
-                SegmentedListItem(
+                ScizorListItem(
                     onClick = { replay(route) },
                     shapes = shapes,
                     colors = scizorSegmentedColors(),
@@ -253,7 +251,7 @@ internal fun LocationSpooferScreen() {
             SectionHeader("Cities")
             val cities = LocationSpoofer.presets.filter { query.isBlank() || it.name.contains(query, true) }
             SegmentedColumn(items = cities) { preset, shapes ->
-                SegmentedListItem(
+                ScizorListItem(
                     onClick = { apply(preset.latitude, preset.longitude, preset.name) },
                     shapes = shapes,
                     colors = scizorSegmentedColors(),

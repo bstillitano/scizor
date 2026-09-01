@@ -1,5 +1,3 @@
-@file:OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
-
 package com.scizor.feature.interfacetools
 
 import android.content.Context
@@ -20,7 +18,6 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Circle
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -33,6 +30,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.scizor.ui.ScizorListItem
+import com.scizor.ui.ScizorListShapes
 import com.scizor.ui.SectionHeader
 import com.scizor.ui.SegmentedColumn
 import com.scizor.ui.scizorSegmentedColors
@@ -57,7 +56,7 @@ private fun overlayToggle(context: Context, setter: (Boolean) -> Unit): (Boolean
 @Composable
 private fun MasterToggle(label: String, subtitle: String, checked: Boolean, onChange: (Boolean) -> Unit) {
     SegmentedColumn(items = listOf("master")) { _, shapes ->
-        SegmentedListItem(
+        ScizorListItem(
             shapes = shapes,
             colors = scizorSegmentedColors(),
             supportingContent = { Text(subtitle) },
@@ -70,7 +69,7 @@ private fun MasterToggle(label: String, subtitle: String, checked: Boolean, onCh
 @Composable
 private fun <T> Chooser(options: List<T>, selected: T, label: (T) -> String, onSelect: (T) -> Unit) {
     SegmentedColumn(items = options) { option, shapes ->
-        SegmentedListItem(
+        ScizorListItem(
             shapes = shapes,
             colors = scizorSegmentedColors(),
             trailingContent = {
@@ -85,8 +84,8 @@ private fun <T> Chooser(options: List<T>, selected: T, label: (T) -> String, onS
 }
 
 @Composable
-private fun ToggleRow(label: String, checked: Boolean, onChange: (Boolean) -> Unit, shapes: androidx.compose.material3.ListItemShapes) {
-    SegmentedListItem(
+private fun ToggleRow(label: String, checked: Boolean, onChange: (Boolean) -> Unit, shapes: ScizorListShapes) {
+    ScizorListItem(
         shapes = shapes,
         colors = scizorSegmentedColors(),
         trailingContent = { Switch(checked = checked, onCheckedChange = onChange) },
@@ -158,7 +157,7 @@ internal fun FpsCounterScreen() {
             )
             SectionHeader("Status")
             SegmentedColumn(items = listOf("fps")) { _, shapes ->
-                SegmentedListItem(
+                ScizorListItem(
                     shapes = shapes,
                     colors = scizorSegmentedColors(),
                     trailingContent = {
@@ -216,7 +215,7 @@ internal fun TouchVisualiserScreen() {
                 }
                 SectionHeader("Touch log")
                 SegmentedColumn(items = log) { entry, shapes ->
-                    SegmentedListItem(shapes = shapes, colors = scizorSegmentedColors(), content = { Text(entry) })
+                    ScizorListItem(shapes = shapes, colors = scizorSegmentedColors(), content = { Text(entry) })
                 }
             }
         }
