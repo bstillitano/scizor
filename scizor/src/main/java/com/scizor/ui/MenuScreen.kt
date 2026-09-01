@@ -1,6 +1,5 @@
 @file:OptIn(
     androidx.compose.foundation.ExperimentalFoundationApi::class,
-    androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class,
 )
 
 package com.scizor.ui
@@ -28,9 +27,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
-import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -103,17 +100,17 @@ private fun Subheader(title: String) {
     )
 }
 
-/** A section rendered with Material 3's expressive [SegmentedListItem] group. */
+/** A section rendered as a [ScizorListItem] group. */
 @Composable
 private fun SegmentedGroup(rows: List<MenuRow>, navigator: ScizorNavigator) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap),
+        verticalArrangement = Arrangement.spacedBy(ScizorSegmentedGap),
     ) {
         rows.forEachIndexed { index, row ->
-            val shapes = ListItemDefaults.segmentedShapes(index = index, count = rows.size)
+            val shapes = scizorSegmentedShapes(index = index, count = rows.size)
             when (row) {
                 is MenuRow.Info -> InfoSegment(row, shapes)
                 is MenuRow.Action -> ActionSegment(row, shapes, navigator)
@@ -124,22 +121,20 @@ private fun SegmentedGroup(rows: List<MenuRow>, navigator: ScizorNavigator) {
 }
 
 @Composable
-private fun InfoSegment(row: MenuRow.Info, shapes: androidx.compose.material3.ListItemShapes) {
+private fun InfoSegment(row: MenuRow.Info, shapes: ScizorListShapes) {
     val clipboard = LocalClipboardManager.current
-    SegmentedListItem(
+    ScizorListItem(
         shapes = shapes,
-        colors = ListItemDefaults.segmentedColors(
+        colors = scizorSegmentedColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
         ),
         leadingContent = row.icon?.let { icon ->
             { Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) }
         },
-        modifier = Modifier.combinedClickable(
-            onClick = {},
-            onLongClick = {
-                clipboard.setText(AnnotatedString("${row.label}: ${row.value}"))
-            },
-        ),
+        onClick = null,
+        onLongClick = {
+            clipboard.setText(AnnotatedString("${row.label}: ${row.value}"))
+        },
         // Label and value share the row directly so the label (measured at its
         // intrinsic width) always keeps its line and the value yields, ellipsizing
         // on the right — rather than the value squeezing the label into a wrap.
@@ -174,17 +169,18 @@ private fun InfoSegment(row: MenuRow.Info, shapes: androidx.compose.material3.Li
 internal const val LOADING_PLACEHOLDER = "Loading…"
 
 @Composable
-private fun ToggleSegment(row: MenuRow.Toggle, shapes: androidx.compose.material3.ListItemShapes) {
+private fun ToggleSegment(row: MenuRow.Toggle, shapes: ScizorListShapes) {
     val checked by row.flow.collectAsStateWithLifecycle()
-    SegmentedListItem(
+    ScizorListItem(
         shapes = shapes,
-        colors = ListItemDefaults.segmentedColors(
+        colors = scizorSegmentedColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
         ),
         leadingContent = { LeadingIcon(row.icon) },
         supportingContent = row.subtitle?.let { { Text(it) } },
         trailingContent = { Switch(checked = checked, onCheckedChange = row.onChange) },
-        modifier = Modifier.combinedClickable(onClick = { row.onChange(!checked) }, onLongClick = {}),
+        onClick = { row.onChange(!checked) },
+        onLongClick = {},
         content = { Text(row.title) },
     )
 }
@@ -192,12 +188,12 @@ private fun ToggleSegment(row: MenuRow.Toggle, shapes: androidx.compose.material
 @Composable
 private fun ActionSegment(
     row: MenuRow.Action,
-    shapes: androidx.compose.material3.ListItemShapes,
+    shapes: ScizorListShapes,
     navigator: ScizorNavigator,
 ) {
     var menuOpen by remember { mutableStateOf(false) }
     Box {
-        SegmentedListItem(
+        ScizorListItem(
             onClick = {
                 when (val action = row.action) {
                     is MenuAction.Open -> navigator.push(action.title) { action.screen(navigator) }
@@ -206,7 +202,7 @@ private fun ActionSegment(
             },
             onLongClick = row.pinnableId?.let { { menuOpen = true } },
             shapes = shapes,
-            colors = ListItemDefaults.segmentedColors(
+            colors = scizorSegmentedColors(
                 containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
             ),
             leadingContent = { LeadingIcon(row.icon) },

@@ -1,5 +1,4 @@
 @file:OptIn(
-    androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class,
     androidx.compose.foundation.ExperimentalFoundationApi::class,
 )
 
@@ -33,7 +32,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -53,6 +51,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.scizor.ui.rememberSearchQuery
+import com.scizor.ui.ScizorListItem
 import com.scizor.ui.ScizorNavigator
 import com.scizor.ui.SectionHeader
 import com.scizor.ui.SegmentedColumn
@@ -77,7 +76,7 @@ internal fun DatabaseBrowserScreen(navigator: ScizorNavigator) {
         if (databases.isNotEmpty()) {
             SectionHeader("SQLite databases")
             SegmentedColumn(items = databases) { db, shapes ->
-                SegmentedListItem(
+                ScizorListItem(
                     shapes = shapes,
                     colors = scizorSegmentedColors(),
                     leadingContent = { Icon(Icons.Filled.Storage, null, tint = MaterialTheme.colorScheme.primary) },
@@ -91,7 +90,7 @@ internal fun DatabaseBrowserScreen(navigator: ScizorNavigator) {
         if (customDbs.isNotEmpty()) {
             SectionHeader("Custom databases")
             SegmentedColumn(items = customDbs) { adapter, shapes ->
-                SegmentedListItem(
+                ScizorListItem(
                     shapes = shapes,
                     colors = scizorSegmentedColors(),
                     leadingContent = { Icon(Icons.Filled.Storage, null, tint = MaterialTheme.colorScheme.primary) },
@@ -119,7 +118,7 @@ private fun AdapterTablesScreen(adapter: ScizorDatabaseAdapter, navigator: Scizo
         SectionHeader("Tables")
         SegmentedColumn(items = tables) { table, shapes ->
             val count = remember(table) { runCatching { adapter.count(table) }.getOrDefault(0) }
-            SegmentedListItem(
+            ScizorListItem(
                 shapes = shapes,
                 colors = scizorSegmentedColors(),
                 leadingContent = { Icon(Icons.Filled.TableChart, null, tint = MaterialTheme.colorScheme.primary) },
@@ -156,7 +155,7 @@ private fun AdapterTableDataScreen(adapter: ScizorDatabaseAdapter, table: String
                 val rest = columns.drop(1).take(2)
                     .mapIndexed { i, col -> "$col: ${row.getOrElse(i + 1) { "" }}" }
                     .joinToString("   ·   ")
-                SegmentedListItem(
+                ScizorListItem(
                     shapes = shapes,
                     colors = scizorSegmentedColors(),
                     supportingContent = {
@@ -197,14 +196,12 @@ private fun AdapterRecordScreen(columns: List<String>, row: List<String>) {
         SectionHeader("Values")
         val pairs = columns.mapIndexed { i, col -> col to row.getOrElse(i) { "" } }
         SegmentedColumn(items = pairs) { (col, value), shapes ->
-            SegmentedListItem(
+            ScizorListItem(
                 shapes = shapes,
                 colors = scizorSegmentedColors(),
                 supportingContent = { Text(value, style = MaterialTheme.typography.bodyMedium) },
-                modifier = Modifier.combinedClickable(
-                    onClick = {},
-                    onLongClick = { clipboard.setText(AnnotatedString("$col: $value")) },
-                ),
+                onClick = null,
+                onLongClick = { clipboard.setText(AnnotatedString("$col: $value")) },
                 content = { Text(col, color = MaterialTheme.colorScheme.primary) },
             )
         }
@@ -220,7 +217,7 @@ private fun TablesScreen(dbName: String, navigator: ScizorNavigator) {
     Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
         SectionHeader("Query")
         SegmentedColumn(items = listOf("sql")) { _, shapes ->
-            SegmentedListItem(
+            ScizorListItem(
                 shapes = shapes,
                 colors = scizorSegmentedColors(),
                 leadingContent = { Icon(Icons.Filled.PlayArrow, null, tint = MaterialTheme.colorScheme.primary) },
@@ -239,7 +236,7 @@ private fun TablesScreen(dbName: String, navigator: ScizorNavigator) {
         SectionHeader("Tables & views")
         SegmentedColumn(items = filtered) { table, shapes ->
             val count = remember(dbName, table.name) { DatabaseBrowser.count(context, dbName, table.name) }
-            SegmentedListItem(
+            ScizorListItem(
                 shapes = shapes,
                 colors = scizorSegmentedColors(),
                 leadingContent = {
@@ -278,7 +275,7 @@ private fun TableDataScreen(dbName: String, table: String, navigator: ScizorNavi
     Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
         SectionHeader("Schema")
         SegmentedColumn(items = listOf("schema")) { _, shapes ->
-            SegmentedListItem(
+            ScizorListItem(
                 shapes = shapes,
                 colors = scizorSegmentedColors(),
                 supportingContent = { Text("${schema.columns.size} columns") },
@@ -303,7 +300,7 @@ private fun TableDataScreen(dbName: String, table: String, navigator: ScizorNavi
                 val rest = data.columns.drop(1).take(2)
                     .mapIndexed { i, col -> "$col: ${row.getOrElse(i + 1) { "" }}" }
                     .joinToString("   ·   ")
-                SegmentedListItem(
+                ScizorListItem(
                     shapes = shapes,
                     colors = scizorSegmentedColors(),
                     supportingContent = {
@@ -377,30 +374,28 @@ private fun SchemaScreen(schema: Schema) {
                 if (col.notNull) add("NOT NULL")
                 col.default?.let { add("default $it") }
             }.joinToString("  ·  ")
-            SegmentedListItem(
+            ScizorListItem(
                 shapes = shapes,
                 colors = scizorSegmentedColors(),
                 supportingContent = { Text(attrs, style = MaterialTheme.typography.bodySmall) },
                 trailingContent = {
                     if (col.primaryKey) AssistChip(onClick = {}, label = { Text("PK") })
                 },
-                modifier = Modifier.combinedClickable(
-                    onClick = {},
-                    onLongClick = { clipboard.setText(AnnotatedString("${col.name} ${col.type}")) },
-                ),
+                onClick = null,
+                onLongClick = { clipboard.setText(AnnotatedString("${col.name} ${col.type}")) },
                 content = { Text(col.name) },
             )
         }
         if (schema.foreignKeys.isNotEmpty()) {
             SectionHeader("Foreign keys")
             SegmentedColumn(items = schema.foreignKeys) { fk, shapes ->
-                SegmentedListItem(shapes = shapes, colors = scizorSegmentedColors(), content = { Text(fk) })
+                ScizorListItem(shapes = shapes, colors = scizorSegmentedColors(), content = { Text(fk) })
             }
         }
         if (schema.indexes.isNotEmpty()) {
             SectionHeader("Indexes")
             SegmentedColumn(items = schema.indexes) { idx, shapes ->
-                SegmentedListItem(shapes = shapes, colors = scizorSegmentedColors(), content = { Text(idx) })
+                ScizorListItem(shapes = shapes, colors = scizorSegmentedColors(), content = { Text(idx) })
             }
         }
     }
@@ -501,21 +496,19 @@ private fun RecordDetailScreen(
         SectionHeader("Values")
         val pairs = columns.mapIndexed { i, col -> col.name to row.getOrElse(i) { "" } }
         SegmentedColumn(items = pairs) { (col, value), shapes ->
-            SegmentedListItem(
+            ScizorListItem(
                 shapes = shapes,
                 colors = scizorSegmentedColors(),
                 supportingContent = { Text(value, style = MaterialTheme.typography.bodyMedium) },
-                modifier = Modifier.combinedClickable(
-                    onClick = {},
-                    onLongClick = { clipboard.setText(AnnotatedString("$col: $value")) },
-                ),
+                onClick = null,
+                onLongClick = { clipboard.setText(AnnotatedString("$col: $value")) },
                 content = { Text(col, color = MaterialTheme.colorScheme.primary) },
             )
         }
         SectionHeader("Actions")
         SegmentedColumn(items = listOf("edit", "delete")) { action, shapes ->
             val isDelete = action == "delete"
-            SegmentedListItem(
+            ScizorListItem(
                 shapes = shapes,
                 colors = scizorSegmentedColors(),
                 supportingContent = if (editable) null else {
