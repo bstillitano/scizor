@@ -44,13 +44,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.scizor.feature.custom.ScizorIcon
 
 @Composable
 internal fun MenuScreen(
@@ -129,7 +130,7 @@ private fun InfoSegment(row: MenuRow.Info, shapes: ScizorListShapes) {
             containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
         ),
         leadingContent = row.icon?.let { icon ->
-            { Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) }
+            { LeadingIcon(icon) }
         },
         onClick = null,
         onLongClick = {
@@ -170,7 +171,23 @@ internal const val LOADING_PLACEHOLDER = "Loading…"
 
 @Composable
 private fun ToggleSegment(row: MenuRow.Toggle, shapes: ScizorListShapes) {
-    val checked by row.flow.collectAsStateWithLifecycle()
+    val flow = row.flow
+    if (flow != null) {
+        val checked by flow.collectAsStateWithLifecycle()
+        ToggleSegmentContent(row, shapes, checked)
+    } else {
+        // Invoked during composition, so the row reflects the host's own store
+        // whenever the menu recomposes rather than snapshotting at registration.
+        ToggleSegmentContent(row, shapes, row.checked?.invoke() ?: false)
+    }
+}
+
+@Composable
+private fun ToggleSegmentContent(
+    row: MenuRow.Toggle,
+    shapes: ScizorListShapes,
+    checked: Boolean,
+) {
     ScizorListItem(
         shapes = shapes,
         colors = scizorSegmentedColors(
@@ -231,12 +248,19 @@ private fun ActionSegment(
 }
 
 @Composable
-private fun LeadingIcon(icon: ImageVector) {
-    Icon(
-        imageVector = icon,
-        contentDescription = null,
-        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-    )
+private fun LeadingIcon(icon: ScizorIcon) {
+    when (icon) {
+        is ScizorIcon.Vector -> Icon(
+            imageVector = icon.image,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        is ScizorIcon.Resource -> Icon(
+            painter = painterResource(id = icon.id),
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
 }
 
 @Composable

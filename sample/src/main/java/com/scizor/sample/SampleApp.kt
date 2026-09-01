@@ -83,10 +83,10 @@ class SampleApp : Application() {
         )
 
         Scizor.developerOptions = listOf(
-            DeveloperOption(title = "Log a test message") {
+            DeveloperOption.Action(title = "Log a test message") {
                 Log.i("ScizorSample", "Test log from developer option")
             },
-            DeveloperOption(title = "Show a toast") {
+            DeveloperOption.Action(title = "Show a toast") {
                 Toast.makeText(this, "Hello from Scizor", Toast.LENGTH_SHORT).show()
             },
         )

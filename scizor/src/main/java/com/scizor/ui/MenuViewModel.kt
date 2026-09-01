@@ -11,6 +11,8 @@ import androidx.compose.material.icons.filled.Slideshow
 import androidx.lifecycle.ViewModel
 import com.scizor.Scizor
 import com.scizor.core.FeatureRegistry
+import com.scizor.feature.custom.DeveloperOption
+import com.scizor.feature.custom.ScizorIcon
 import com.scizor.feature.deviceinfo.DeviceInfo
 import com.scizor.feature.interfacetools.InterfaceToolkit
 import com.scizor.feature.network.IpAddress
@@ -45,20 +47,29 @@ internal class MenuViewModel : ViewModel() {
         // Custom developer options sit in their own section directly under Application.
         val developerRows = Scizor.developerOptions.map { option ->
             val id = "developer_option_${option.title}"
-            when {
-                option.value != null -> MenuRow.Info(id, option.title, option.value!!)
-                option.screen != null -> MenuRow.Action(
+            val icon: ScizorIcon = option.icon ?: ScizorIcon.Vector(Icons.Filled.Extension)
+            when (option) {
+                is DeveloperOption.Value -> MenuRow.Info(id, option.title, option.value, icon)
+                is DeveloperOption.Screen -> MenuRow.Action(
                     id = id,
                     title = option.title,
-                    subtitle = null,
-                    icon = option.icon ?: Icons.Filled.Extension,
-                    action = MenuAction.Open(option.title) { option.screen!!.invoke() },
+                    subtitle = option.subtitle,
+                    icon = icon,
+                    action = MenuAction.Open(option.title) { option.screen() },
                 )
-                else -> MenuRow.Action(
+                is DeveloperOption.Toggle -> MenuRow.Toggle(
                     id = id,
                     title = option.title,
-                    subtitle = null,
-                    icon = option.icon ?: Icons.Filled.Extension,
+                    subtitle = option.subtitle,
+                    icon = icon,
+                    checked = option.checked,
+                    onChange = option.onCheckedChange,
+                )
+                is DeveloperOption.Action -> MenuRow.Action(
+                    id = id,
+                    title = option.title,
+                    subtitle = option.subtitle,
+                    icon = icon,
                     action = MenuAction.Run(option.onClick),
                 )
             }
@@ -78,7 +89,7 @@ internal class MenuViewModel : ViewModel() {
                         id = "pinned_${entry.id}",
                         title = entry.title,
                         subtitle = entry.subtitle,
-                        icon = entry.icon,
+                        icon = ScizorIcon.Vector(entry.icon),
                         action = MenuAction.Open(entry.title, entry.screen),
                         pinnableId = entry.id,
                     )
@@ -93,12 +104,15 @@ internal class MenuViewModel : ViewModel() {
                 // Scyther shows the device's public IP inline atop the Networking section.
                 if (section == "Networking") {
                     rows += MenuRow.Info(
-                        "ip_address", "IP Address", ipAddress ?: LOADING_PLACEHOLDER, Icons.Filled.Public,
+                        "ip_address", "IP Address", ipAddress ?: LOADING_PLACEHOLDER,
+                        ScizorIcon.Vector(Icons.Filled.Public),
                     )
                 }
                 if (section == "Notifications") {
                     Scizor.fcmToken?.let {
-                        rows += MenuRow.Info("fcm_token", "FCM Token", it, Icons.Filled.LocalFireDepartment)
+                        rows += MenuRow.Info(
+                            "fcm_token", "FCM Token", it, ScizorIcon.Vector(Icons.Filled.LocalFireDepartment),
+                        )
                     }
                 }
                 rows += entries.map { entry ->
@@ -106,7 +120,7 @@ internal class MenuViewModel : ViewModel() {
                         id = entry.id,
                         title = entry.title,
                         subtitle = entry.subtitle,
-                        icon = entry.icon,
+                        icon = ScizorIcon.Vector(entry.icon),
                         action = MenuAction.Open(entry.title, entry.screen),
                         pinnableId = entry.id,
                     )
@@ -115,15 +129,18 @@ internal class MenuViewModel : ViewModel() {
                 if (section == "UI/UX") {
                     rows += MenuRow.Toggle(
                         "toggle_slow", "Slow animations", "Scale durations 10×",
-                        Icons.Filled.Slideshow, InterfaceToolkit.slowAnimations, InterfaceToolkit::setSlowAnimations,
+                        ScizorIcon.Vector(Icons.Filled.Slideshow), InterfaceToolkit.slowAnimations,
+                        onChange = InterfaceToolkit::setSlowAnimations,
                     )
                     rows += MenuRow.Toggle(
                         "toggle_frames", "Show view frames", "Outline every view",
-                        Icons.Filled.CheckBoxOutlineBlank, InterfaceToolkit.frames, InterfaceToolkit::setFrames,
+                        ScizorIcon.Vector(Icons.Filled.CheckBoxOutlineBlank), InterfaceToolkit.frames,
+                        onChange = InterfaceToolkit::setFrames,
                     )
                     rows += MenuRow.Toggle(
                         "toggle_sizes", "Show view sizes", "Width × height labels",
-                        Icons.Filled.Straighten, InterfaceToolkit.sizes, InterfaceToolkit::setSizes,
+                        ScizorIcon.Vector(Icons.Filled.Straighten), InterfaceToolkit.sizes,
+                        onChange = InterfaceToolkit::setSizes,
                     )
                 }
                 groups += MenuGroupUi(title = section, rows = rows)

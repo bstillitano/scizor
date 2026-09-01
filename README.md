@@ -235,9 +235,30 @@ text filters.
 
 ### Custom Developer Options
 
+`DeveloperOption` is a sealed hierarchy with one subtype per row shape. Every subtype
+takes an optional `subtitle` and `icon` (a `ScizorIcon.Vector` or `ScizorIcon.Resource`).
+
 ```kotlin
 Scizor.developerOptions = listOf(
-    DeveloperOption(title = "Reset onboarding") { resetOnboarding() },
+    // A runnable action. `dismissOnClick` is reserved for actions that navigate into
+    // the host app (a deep link, a screen, a permission prompt).
+    DeveloperOption.Action(title = "Reset onboarding") { resetOnboarding() },
+
+    // A read-only label/value pair.
+    DeveloperOption.Value(title = "Build", value = BuildConfig.VERSION_NAME),
+
+    // Pushes a Composable onto the menu's navigation stack.
+    DeveloperOption.Screen(title = "Sandbox") { SandboxScreen() },
+
+    // An on/off switch backed by the host's own store. `checked` is a lambda, not a
+    // `Boolean`, so the host's store stays the source of truth — the row re-reads it
+    // on every recomposition instead of snapshotting whatever was true when it was
+    // registered.
+    DeveloperOption.Toggle(
+        title = "Bypass PIN rules",
+        checked = { MyDebugStore.bypassPinRules },
+        onCheckedChange = { MyDebugStore.bypassPinRules = it },
+    ),
 )
 ```
 

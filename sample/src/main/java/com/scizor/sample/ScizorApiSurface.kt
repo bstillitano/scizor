@@ -44,9 +44,12 @@ internal fun scizorApiSurface(application: Application) {
     val vectorIcon: ScizorIcon = ScizorIcon.Vector(Icons.Filled.Close)
     val resourceIcon: ScizorIcon = ScizorIcon.Resource(android.R.drawable.ic_menu_info_details)
     Scizor.developerOptions = listOf(
-        DeveloperOption(title = "x", icon = null) {},
-        DeveloperOption(title = "v", value = "1"),
-        DeveloperOption(title = "s", screen = {}),
+        DeveloperOption.Action(title = "a") {},
+        DeveloperOption.Action(title = "a", subtitle = "s", icon = vectorIcon, dismissOnClick = true) {},
+        DeveloperOption.Value(title = "v", value = "1"),
+        DeveloperOption.Value(title = "v", value = "1", subtitle = "s", icon = resourceIcon),
+        DeveloperOption.Screen(title = "s", screen = {}),
+        DeveloperOption.Toggle(title = "t", checked = { true }, onCheckedChange = {}),
     )
     Scizor.environmentVariables = mapOf("k" to "v")
     Scizor.fcmToken = "token"
