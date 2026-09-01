@@ -155,24 +155,40 @@ dependencyResolutionManagement {
 }
 ```
 
-Then add the toolkit to your debug builds:
+Then add the toolkit:
 
 ```kotlin
 // app/build.gradle.kts
 dependencies {
-    debugImplementation("com.github.bstillitano.scizor:scizor:<tag>")
+    implementation("com.github.bstillitano.scizor:scizor:v0.2.0")
 }
 ```
 
-`<tag>` is a release tag from the [Releases](https://github.com/bstillitano/scizor/releases)
-page.
+That is the recommended wiring, and it is safe by default: `Scizor.start()` **refuses to run
+in a non-debuggable build** unless you explicitly opt in. Your code calls Scizor from ordinary
+`main` source, it compiles in every variant, and the toolkit stays inert in release. See
+[Shipping Scizor in a release build](#shipping-scizor-in-a-release-build) for the opt-in and
+for trimming what ships.
 
-There is one artifact, and `debugImplementation` is the whole production story: it is not on
-the release classpath, so the debugging UI, the Logcat reader, the network buffers and
-[Scizor's manifest entries](#what-scizor-adds-to-your-manifest) cannot be in your shipped app.
+The trade is that the artifact is present in your release APK — about 1 MB, plus
+[Scizor's manifest entries](#what-scizor-adds-to-your-manifest), which include the
+`SYSTEM_ALERT_WINDOW` permission that appears in a Play Store listing. Both are removable.
 
-Because the artifact is debug-only, the code that *calls* Scizor has to be debug-only too. The
-usual shape is a small initialiser with a release stub:
+### Keeping it out of release builds entirely
+
+If you want nothing at all in your shipped app, use `debugImplementation` instead:
+
+```kotlin
+dependencies {
+    debugImplementation("com.github.bstillitano.scizor:scizor:v0.2.0")
+}
+```
+
+Now the artifact is not on the release classpath, so the debugging UI, the Logcat reader, the
+network buffers and the manifest entries cannot be in your shipped app at all.
+
+The cost is that the code which *calls* Scizor has to be debug-only too, or your release build
+will not compile. The usual shape is a small initialiser with a release stub:
 
 ```kotlin
 // src/debug/java/com/example/DebugTools.kt
@@ -197,10 +213,6 @@ class MyApp : Application() {
 }
 ```
 
-If splitting source sets is not worth it to you, depend on Scizor with plain `implementation`
-instead and read [Shipping Scizor in a release build](#shipping-scizor-in-a-release-build) —
-`Scizor.start()` refuses to run in a release build unless you explicitly opt in.
-
 ### Migrating from v0.1.0
 
 **Breaking change: the `scizor-no-op` artifact no longer exists.** Delete its line, or your
@@ -208,20 +220,21 @@ release build will fail to resolve it:
 
 ```diff
  dependencies {
-     debugImplementation("com.github.bstillitano.scizor:scizor:<tag>")
--    releaseImplementation("com.github.bstillitano.scizor:scizor-no-op:<tag>")
+     debugImplementation("com.github.bstillitano.scizor:scizor:v0.1.0")
+-    releaseImplementation("com.github.bstillitano.scizor:scizor-no-op:v0.1.0")
  }
 ```
 
 What replaces it depends on why you had it:
 
-- **You wanted Scizor out of release builds.** Nothing more to do; `debugImplementation` alone
-  is the guarantee. If your release build now fails to *compile* because `main` source
-  references `Scizor`, move those calls into a debug-only source set as shown above.
-- **You wanted your Scizor calls to keep compiling in release.** Change `debugImplementation`
-  to `implementation` so the real artifact is on both classpaths.
-  [`Scizor.start()` refuses to run](#shipping-scizor-in-a-release-build) in a non-debuggable
-  build, so the toolkit stays inert unless you pass `allowProductionBuilds = true`.
+- **You wanted your Scizor calls to keep compiling in release** — which is what the no-op was
+  for. Change `debugImplementation` to `implementation`. The real artifact is then on both
+  classpaths, and [`Scizor.start()` refuses to run](#shipping-scizor-in-a-release-build) in a
+  non-debuggable build, so the toolkit stays inert unless you pass `allowProductionBuilds = true`.
+  This is the closest equivalent to what you had.
+- **You wanted Scizor out of release builds entirely.** Keep `debugImplementation`. If your
+  release build now fails to *compile* because `main` source references `Scizor`, move those
+  calls into a debug-only source set as shown above.
 
 The no-op was a hand-mirrored copy of every public symbol, policed by a compile-time parity
 file and published as a second artifact. The `start()` gate covers the case it existed for at
@@ -553,7 +566,7 @@ unconditionally:
 
 ```kotlin
 dependencies {
-    implementation("com.github.bstillitano.scizor:scizor:<tag>")
+    implementation("com.github.bstillitano.scizor:scizor:v0.2.0")
 }
 ```
 
