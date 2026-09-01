@@ -127,6 +127,7 @@ internal fun scizorApiSurface(application: Application) {
 
     // Network
     val interceptor = network.interceptor()
+    val ktorPlugin: io.ktor.client.plugins.api.ClientPlugin<Unit> = network.ktorPlugin()
     network.clear()
     network.find(1L)
     val txs = network.transactions

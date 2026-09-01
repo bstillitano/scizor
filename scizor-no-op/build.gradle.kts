@@ -36,6 +36,10 @@ dependencies {
     implementation(libs.okhttp)
     implementation(libs.coroutines.android)
     implementation(libs.compose.ui)
+
+    // Mirrors `Scizor.network.ktorPlugin()`'s signature only; compileOnly here too, so
+    // the no-op artifact never puts Ktor on a release app's classpath.
+    compileOnly(libs.ktor.client.core)
 }
 
 // JitPack derives the group and artifact id from the repository coordinates

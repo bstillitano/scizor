@@ -1,5 +1,6 @@
 package com.scizor.feature.network
 
+import io.ktor.client.plugins.api.ClientPlugin
 import okhttp3.Interceptor
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -14,6 +15,11 @@ import java.util.concurrent.atomic.AtomicLong
  * ```
  * OkHttpClient.Builder().addInterceptor(Scizor.network.interceptor()).build()
  * ```
+ *
+ * Ktor clients on a non-OkHttp engine install [ktorPlugin] instead:
+ * ```
+ * HttpClient(CIO) { install(Scizor.network.ktorPlugin()) }
+ * ```
  */
 object NetworkLogger {
 
@@ -26,6 +32,16 @@ object NetworkLogger {
     val transactions: StateFlow<List<NetworkTransaction>> = _transactions.asStateFlow()
 
     fun interceptor(): Interceptor = ScizorInterceptor()
+
+    /**
+     * A Ktor client plugin that records into this logger, for hosts running Ktor on a
+     * non-OkHttp engine (CIO, Android, Java). Ktor on the OkHttp engine needs nothing
+     * new — pass [interceptor] to the engine instead.
+     *
+     * `ktor-client-core` is a `compileOnly` dependency of Scizor, so this method is
+     * only callable by apps that already have Ktor on their classpath.
+     */
+    fun ktorPlugin(): ClientPlugin<Unit> = scizorKtorPlugin()
 
     fun clear() {
         synchronized(buffer) {

@@ -73,10 +73,17 @@ dependencies {
     // follow the spoof. compileOnly — consumers add `debugImplementation(libs.play.services.location)`.
     compileOnly(libs.play.services.location)
 
+    // Optional: `Scizor.network.ktorPlugin()` returns a Ktor client plugin for hosts
+    // running Ktor on a non-OkHttp engine. compileOnly keeps Ktor off Scizor's
+    // dependency footprint — only apps that already use Ktor ever call it.
+    compileOnly(libs.ktor.client.core)
+
     testImplementation(libs.junit)
     testImplementation(libs.robolectric)
     testImplementation(libs.coroutines.test)
     testImplementation(libs.mockwebserver)
+    testImplementation(libs.ktor.client.core)
+    testImplementation(libs.ktor.client.mock)
 }
 
 // JitPack derives the group and artifact id from the repository coordinates

@@ -17,6 +17,7 @@ robolectric = "4.16.1"
 codeScanner = "16.1.0"
 locationServices = "21.3.0"
 osmdroid = "6.1.20"
+ktor = "3.5.2"
 
 [libraries]
 core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
@@ -43,6 +44,8 @@ robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectr
 play-services-code-scanner = { module = "com.google.android.gms:play-services-code-scanner", version.ref = "codeScanner" }
 play-services-location = { module = "com.google.android.gms:play-services-location", version.ref = "locationServices" }
 osmdroid-android = { module = "org.osmdroid:osmdroid-android", version.ref = "osmdroid" }
+ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
+ktor-client-mock = { module = "io.ktor:ktor-client-mock", version.ref = "ktor" }
 
 [plugins]
 android-library = { id = "com.android.library", version.ref = "agp" }

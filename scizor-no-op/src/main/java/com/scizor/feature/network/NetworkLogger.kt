@@ -1,5 +1,7 @@
 package com.scizor.feature.network
 
+import io.ktor.client.plugins.api.ClientPlugin
+import io.ktor.client.plugins.api.createClientPlugin
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import okhttp3.Interceptor
@@ -44,6 +46,14 @@ class ScizorInterceptor : Interceptor {
 object NetworkLogger {
     val transactions: StateFlow<List<NetworkTransaction>> = MutableStateFlow(emptyList())
     fun interceptor(): Interceptor = ScizorInterceptor()
+
+    /**
+     * No-op mirror of the real `ktorPlugin()`. `createClientPlugin` with an empty body
+     * registers no hooks, so installing it adds nothing to any of the client's
+     * pipelines and no request or response is ever touched.
+     */
+    fun ktorPlugin(): ClientPlugin<Unit> = createClientPlugin("ScizorNetworkLogger") {}
+
     fun clear() = Unit
 
     @Suppress("UNUSED_PARAMETER")
