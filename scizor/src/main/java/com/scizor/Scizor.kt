@@ -42,6 +42,7 @@ object Scizor {
      *
      * Weak so a missed [ScizorActivity.onDestroy] can never leak an activity.
      */
+    @Volatile
     internal var activityRef: java.lang.ref.WeakReference<ScizorActivity>? = null
 
     internal lateinit var store: ScizorStore

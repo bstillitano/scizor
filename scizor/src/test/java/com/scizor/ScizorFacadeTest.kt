@@ -2,6 +2,7 @@ package com.scizor
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -40,6 +41,9 @@ class ScizorFacadeTest {
         val app = RuntimeEnvironment.getApplication()
         Scizor.start(app)
 
+        // Reset so this test's outcome does not depend on JUnit's execution order.
+        Scizor.activityRef = null
+
         // No activity is live; this must not throw.
         Scizor.dismiss()
     }
@@ -68,7 +72,10 @@ class ScizorFacadeTest {
             .setup()
             .destroy()
 
-        // Reference cleared in onDestroy; nothing to finish, and no throw.
+        // Reference cleared in onDestroy — not merely "not thrown", but actually gone.
+        assertNull(Scizor.activityRef?.get())
+
+        // And dismiss() on the now-empty reference is a safe no-op.
         Scizor.dismiss()
     }
 }
