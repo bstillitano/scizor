@@ -473,6 +473,24 @@ Depending on `scizor-no-op` in release builds guarantees the debugging UI, Logca
 network buffers are never included in your shipped app. Feature flags and server configuration
 still resolve to their registered defaults, so any host logic that reads them keeps working.
 
+### The production gate
+
+`Scizor.start()` is guarded too, so the real artifact ending up in a release build is not
+enough to make it run. It starts only when the app is **debuggable** — true for debug builds
+and for internal-distribution builds deliberately signed as debuggable, false for anything
+shipped through the Play Store. When it refuses, nothing is captured, installed or observed,
+and it writes a warning to Logcat saying why.
+
+Override it deliberately when that is what you mean:
+
+```kotlin
+Scizor.start(this, allowProductionBuilds = true)
+```
+
+That is for a signed QA build, or a menu unlocked behind a hidden gesture. Pair it with
+[`Scizor.disabledFeatures`](#disabled-features) to keep the riskier tools out of a build that
+leaves the building. This mirrors Scyther's `Scyther.start(allowProductionBuilds:)` on iOS.
+
 ### Where Scizor's own settings live
 
 Scizor persists its settings — feature flag overrides, the selected server, menu pins, the
@@ -492,7 +510,7 @@ accidental one, and Scyther has the same limit.
 
 | Symbol | Purpose |
 |---|---|
-| `Scizor.start(app)` | Initialise the toolkit |
+| `Scizor.start(app, allowProductionBuilds)` | Initialise the toolkit; refuses in a non-debuggable build unless overridden |
 | `Scizor.show()` | Open the menu manually |
 | `Scizor.dismiss()` | Close the menu if it is open; no-op otherwise |
 | `Scizor.invocationGesture` | `SHAKE` / `FLOATING_BUTTON` / `NONE` |

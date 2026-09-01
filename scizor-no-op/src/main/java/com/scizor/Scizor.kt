@@ -44,7 +44,7 @@ object Scizor {
     val cookies: com.scizor.feature.cookies.CookieLog get() = com.scizor.feature.cookies.CookieLog
 
     @Suppress("UNUSED_PARAMETER")
-    fun start(application: Application) = Unit
+    fun start(application: Application, allowProductionBuilds: Boolean = false) = Unit
 
     fun wrapAppearance(base: android.content.Context): android.content.Context = base
 

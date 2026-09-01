@@ -36,6 +36,7 @@ import com.scizor.feature.servers.ServerEnvironment
 internal fun scizorApiSurface(application: Application) {
     // Facade
     Scizor.start(application)
+    Scizor.start(application, allowProductionBuilds = true)
     Scizor.show()
     Scizor.dismiss()
     val wrapped: android.content.Context = Scizor.wrapAppearance(application)

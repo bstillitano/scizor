@@ -1,13 +1,18 @@
 package com.scizor
 
+import android.content.pm.ApplicationInfo
+import android.util.Log
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
+import org.robolectric.shadows.ShadowLog
 
 @RunWith(RobolectricTestRunner::class)
 class ScizorFacadeTest {
@@ -123,6 +128,74 @@ class ScizorFacadeTest {
             assertTrue(titles.contains("Feature Flags"))
         } finally {
             Scizor.disabledFeatures = emptySet()
+        }
+    }
+
+    @Test
+    fun `start runs under a debuggable application`() {
+        val app = RuntimeEnvironment.getApplication()
+        // Robolectric's application carries FLAG_DEBUGGABLE, which is what lets every
+        // other test in this class call start() at all.
+        assertTrue((app.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0)
+
+        ShadowLog.clear()
+        Scizor.start(app)
+
+        assertTrue(gateRefusals().isEmpty())
+        assertNotNull(Scizor.storeOrNull())
+    }
+
+    @Test
+    fun `start refuses when the build is not debuggable`() {
+        val app = RuntimeEnvironment.getApplication()
+        withDebuggable(false) {
+            val storeBefore = Scizor.storeOrNull()
+            ShadowLog.clear()
+
+            Scizor.start(app)
+
+            // The refusal is loud: a developer who wires Scizor into a release build
+            // and sees nothing can find out why from Logcat.
+            assertEquals(1, gateRefusals().size)
+            // And it returns before touching anything — the store is neither created
+            // nor rebuilt. ScizorProductionGateTest proves the same on a facade that
+            // has never started, where every side effect is still observable.
+            assertSame(storeBefore, Scizor.storeOrNull())
+        }
+    }
+
+    @Test
+    fun `allowProductionBuilds overrides the gate`() {
+        val app = RuntimeEnvironment.getApplication()
+        withDebuggable(false) {
+            ShadowLog.clear()
+
+            Scizor.start(app, allowProductionBuilds = true)
+
+            assertTrue(gateRefusals().isEmpty())
+            assertNotNull(Scizor.storeOrNull())
+        }
+    }
+
+    /** Warnings written by the production gate, and nothing else. */
+    private fun gateRefusals(): List<ShadowLog.LogItem> =
+        ShadowLog.getLogs().filter {
+            it.type == Log.WARN && it.tag == "Scizor" && it.msg.contains("not debuggable")
+        }
+
+    /** Runs [body] with the Robolectric application's debuggable flag forced to [debuggable]. */
+    private fun withDebuggable(debuggable: Boolean, body: () -> Unit) {
+        val info = RuntimeEnvironment.getApplication().applicationInfo
+        val original = info.flags
+        info.flags = if (debuggable) {
+            original or ApplicationInfo.FLAG_DEBUGGABLE
+        } else {
+            original and ApplicationInfo.FLAG_DEBUGGABLE.inv()
+        }
+        try {
+            body()
+        } finally {
+            info.flags = original
         }
     }
 }

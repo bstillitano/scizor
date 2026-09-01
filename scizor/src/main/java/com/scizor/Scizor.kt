@@ -3,6 +3,7 @@ package com.scizor
 import android.app.Application
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ApplicationInfo
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -111,8 +112,42 @@ object Scizor {
     /**
      * Wires up Scizor. Call once, early in [Application.onCreate].
      * Safe to call more than once; subsequent calls are ignored.
+     *
+     * ## The production gate
+     *
+     * Scizor refuses to start in a build that is not debuggable. Nothing is
+     * captured, installed or observed — no Logcat reader, no crash handler, no
+     * overlay, no shake detector — and a warning naming the reason is written to
+     * Logcat so the refusal is never silent.
+     *
+     * `FLAG_DEBUGGABLE` is Android's analogue of the receipt check Scyther makes
+     * on iOS. It is set for debug builds and for internal-distribution builds
+     * deliberately signed as debuggable, and clear for anything shipped through
+     * the Play Store.
+     *
+     * @param allowProductionBuilds start even when the build is not debuggable.
+     *   For a host that ships the real artifact on purpose — a signed QA build,
+     *   or a menu unlocked behind a hidden gesture. Pair it with
+     *   [disabledFeatures] to keep the riskier tools out of a build that leaves
+     *   the building.
      */
-    fun start(application: Application) {
+    fun start(application: Application, allowProductionBuilds: Boolean = false) {
+        // Checked ahead of the already-started guard, mirroring Scyther's
+        // `guard !AppEnvironment.isAppStore || allowProductionBuilds` as the first
+        // line of its own start(), so that every refused call says why rather than
+        // only the first one. A refused call does nothing either way.
+        val debuggable =
+            (application.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
+        if (!debuggable && !allowProductionBuilds) {
+            android.util.Log.w(
+                TAG,
+                "start() refused — this build is not debuggable, so Scizor did not start. " +
+                    "Scizor is meant to be wired with debugImplementation; if you mean to " +
+                    "ship it in a release build, call " +
+                    "Scizor.start(application, allowProductionBuilds = true).",
+            )
+            return
+        }
         if (this.application != null) return
         this.application = application
         store = ScizorStore(application).also { it.preload() }
