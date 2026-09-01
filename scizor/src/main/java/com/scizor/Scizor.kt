@@ -3,6 +3,9 @@ package com.scizor
 import android.app.Application
 import android.content.Context
 import android.content.Intent
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import com.scizor.core.ScizorActivity
 import com.scizor.core.ScizorStore
 import com.scizor.core.ShakeDetector
@@ -59,22 +62,22 @@ object Scizor {
         }
 
     /** Custom entries shown in the menu's "Developer" section. */
-    var developerOptions: List<DeveloperOption> = emptyList()
+    var developerOptions: List<DeveloperOption> by mutableStateOf(emptyList())
 
     /** Read-only key/value pairs surfaced in the menu's environment screen. */
-    var environmentVariables: Map<String, String> = emptyMap()
+    var environmentVariables: Map<String, String> by mutableStateOf(emptyMap())
 
     /** FCM registration token, if the host provides it — shown in Notifications. */
-    var fcmToken: String? = null
+    var fcmToken: String? by mutableStateOf(null)
 
     /** Host-registered Composables shown in the menu's Interface Previews screen. */
-    var interfacePreviews: List<InterfacePreview> = emptyList()
+    var interfacePreviews: List<InterfacePreview> by mutableStateOf(emptyList())
 
     /** One-tap deep link presets shown in the Deep Link Tester. */
-    var deepLinkPresets: List<com.scizor.feature.deeplink.DeepLinkPreset> = emptyList()
+    var deepLinkPresets: List<com.scizor.feature.deeplink.DeepLinkPreset> by mutableStateOf(emptyList())
 
     /** Host-provided custom database sources shown in the Database Browser. */
-    var databaseAdapters: List<com.scizor.feature.databasebrowser.ScizorDatabaseAdapter> = emptyList()
+    var databaseAdapters: List<com.scizor.feature.databasebrowser.ScizorDatabaseAdapter> by mutableStateOf(emptyList())
 
     /** HTTP traffic logger. Add [NetworkLogger.interceptor] to your OkHttpClient. */
     val network: NetworkLogger get() = NetworkLogger

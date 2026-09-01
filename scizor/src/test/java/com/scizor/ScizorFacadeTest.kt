@@ -78,4 +78,30 @@ class ScizorFacadeTest {
         // And dismiss() on the now-empty reference is a safe no-op.
         Scizor.dismiss()
     }
+
+    @Test
+    fun `host-assigned properties are snapshot state`() {
+        val app = RuntimeEnvironment.getApplication()
+        Scizor.start(app)
+
+        // Applying a snapshot reports every state object written in it. A property
+        // backed by mutableStateOf contributes one; a plain var contributes nothing.
+        //
+        // Note the observer reports the backing state object, not Scizor itself —
+        // do not try to identify the changed object by `it === Scizor`.
+        var changedObjects = 0
+        val observer = androidx.compose.runtime.snapshots.Snapshot.registerApplyObserver { changed, _ ->
+            changedObjects += changed.size
+        }
+
+        try {
+            androidx.compose.runtime.snapshots.Snapshot.withMutableSnapshot {
+                Scizor.fcmToken = "token-a"
+            }
+            assertTrue("expected the write to notify a snapshot observer", changedObjects > 0)
+        } finally {
+            observer.dispose()
+            Scizor.fcmToken = null
+        }
+    }
 }
