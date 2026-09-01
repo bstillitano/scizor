@@ -76,9 +76,19 @@ internal object CrashLogger {
         }
     }
 
+    /**
+     * Crash logs live in device-protected storage alongside [com.scizor.core.ScizorStore],
+     * so a host clearing `filesDir` on sign-out does not discard them.
+     */
+    private fun logDir(context: Context): File {
+        val deviceContext =
+            runCatching { context.createDeviceProtectedStorageContext() }.getOrNull() ?: context
+        return File(deviceContext.filesDir, DIR)
+    }
+
     private fun persist(thread: Thread, throwable: Throwable) {
         val context = appContext ?: return
-        val dir = File(context.filesDir, DIR).apply { mkdirs() }
+        val dir = logDir(context).apply { mkdirs() }
         val now = System.currentTimeMillis()
         val trace = StringWriter().also { throwable.printStackTrace(PrintWriter(it)) }.toString()
         File(dir, "$now.txt").writeText(
@@ -102,7 +112,7 @@ internal object CrashLogger {
     }
 
     fun crashes(context: Context): List<CrashLog> {
-        val dir = File(context.filesDir, DIR)
+        val dir = logDir(context)
         val files = dir.listFiles()?.filter { it.extension == "txt" } ?: return emptyList()
         return files
             .sortedByDescending { it.name }
@@ -125,7 +135,7 @@ internal object CrashLogger {
     }
 
     fun clear(context: Context) {
-        File(context.filesDir, DIR).listFiles()?.forEach { it.delete() }
+        logDir(context).listFiles()?.forEach { it.delete() }
     }
 
     /** Test/demo helper: records a synthetic crash without terminating the process. */
