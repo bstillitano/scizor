@@ -33,13 +33,25 @@ jobs:
         with:
           generate_release_notes: true
 
-      - name: Ask JitPack to build the tag
-        # JitPack's build API is /api/builds/{group}/{artifact}/{version}, so each
-        # module needs its own call. -f is what makes a 404 an error: without it curl
-        # exits 0 on any HTTP status and the fallback below can never fire.
+      - name: Warm the JitPack build
+        # JitPack builds lazily on first *artifact* resolution — requesting the POM is
+        # what a consumer's Gradle does, and it is what actually triggers a build.
+        # The /api/builds/ endpoint only reports status and does not trigger anything;
+        # it has also been observed returning "none" while the artifact was already
+        # being served, so it is not a reliable check either. Fetching the POM here
+        # means the first real consumer gets a cached artifact rather than waiting
+        # through a cold build.
+        #
+        # Non-fatal by design: the release is already cut by this point, and JitPack
+        # will build on demand regardless. A slow cold build can exceed the timeout
+        # and still succeed.
         run: |
           for artifact in scizor scizor-no-op; do
-            curl -fsS -m 300 \
-              "https://jitpack.io/api/builds/com.github.bstillitano.scizor/${artifact}/${GITHUB_REF_NAME}" \
-              || echo "JitPack build request for ${artifact} failed; check https://jitpack.io/#bstillitano/scizor"
+            url="https://jitpack.io/com/github/bstillitano/scizor/${artifact}/${GITHUB_REF_NAME}/${artifact}-${GITHUB_REF_NAME}.pom"
+            if curl -fsS -m 600 -o /dev/null "$url"; then
+              echo "JitPack has built and served ${artifact} ${GITHUB_REF_NAME}"
+            else
+              echo "Could not warm ${artifact} ${GITHUB_REF_NAME} — the first consumer to"
+              echo "resolve it will trigger the build. See https://jitpack.io/#bstillitano/scizor"
+            fi
           done
