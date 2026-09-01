@@ -7,6 +7,7 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -61,7 +62,7 @@ private val PressedRadius = 12.dp
 /** Gap between segments in a group. */
 private val SegmentedGap = 2.dp
 
-/** Alpha applied to a disabled row's content, matching the standard disabled reading. */
+/** Alpha applied to a disabled row's content slots (not its container fill), matching the standard disabled reading. */
 private const val DisabledContentAlpha = 0.38f
 
 /**
@@ -167,9 +168,11 @@ private fun SampleListItem(
     val contentAlpha = if (enabled) 1f else DisabledContentAlpha
 
     ListItem(
-        headlineContent = content,
-        modifier = modifier.clip(shape).then(clickable).alpha(contentAlpha),
-        trailingContent = trailingContent,
+        headlineContent = { Box(Modifier.alpha(contentAlpha)) { content() } },
+        modifier = modifier.clip(shape).then(clickable),
+        trailingContent = trailingContent?.let { slot ->
+            { Box(Modifier.alpha(contentAlpha)) { slot() } }
+        },
         colors = colors,
     )
 }
