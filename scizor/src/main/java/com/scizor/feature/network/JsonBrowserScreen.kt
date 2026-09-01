@@ -1,11 +1,9 @@
 @file:OptIn(
     androidx.compose.foundation.ExperimentalFoundationApi::class,
-    androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class,
 )
 
 package com.scizor.feature.network
 
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -16,10 +14,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.Icon
-import androidx.compose.material3.ListItemDefaults
-import androidx.compose.material3.ListItemShapes
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -29,9 +24,13 @@ import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.scizor.ui.ScizorListItem
+import com.scizor.ui.ScizorListShapes
 import com.scizor.ui.ScizorNavigator
+import com.scizor.ui.ScizorSegmentedGap
 import com.scizor.ui.SegmentInset
 import com.scizor.ui.scizorSegmentedColors
+import com.scizor.ui.scizorSegmentedShapes
 import org.json.JSONArray
 import org.json.JSONObject
 import org.json.JSONTokener
@@ -54,11 +53,11 @@ internal fun JsonBrowserScreen(json: String, navigator: ScizorNavigator) {
 
     LazyColumn(
         modifier = Modifier.fillMaxSize().padding(horizontal = SegmentInset),
-        verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap),
+        verticalArrangement = Arrangement.spacedBy(ScizorSegmentedGap),
         contentPadding = PaddingValues(vertical = 12.dp),
     ) {
         itemsIndexed(rows) { index, row ->
-            JsonRowItem(row, ListItemDefaults.segmentedShapes(index = index, count = rows.size), navigator)
+            JsonRowItem(row, scizorSegmentedShapes(index = index, count = rows.size), navigator)
         }
     }
 }
@@ -70,39 +69,35 @@ private fun rowsFor(value: Any?): List<JsonRow>? = when (value) {
 }
 
 @Composable
-private fun JsonRowItem(row: JsonRow, shapes: ListItemShapes, navigator: ScizorNavigator) {
+private fun JsonRowItem(row: JsonRow, shapes: ScizorListShapes, navigator: ScizorNavigator) {
     val clipboard = LocalClipboardManager.current
     when (val v = row.value) {
-        is JSONObject -> SegmentedListItem(
+        is JSONObject -> ScizorListItem(
             shapes = shapes,
             colors = scizorSegmentedColors(),
             supportingContent = { Text("{ ${v.length()} }") },
             trailingContent = { Chevron() },
-            modifier = Modifier.combinedClickable(onClick = {
-                navigator.push(row.label) { JsonBrowserScreen(v.toString(), navigator) }
-            }, onLongClick = {}),
+            onClick = { navigator.push(row.label) { JsonBrowserScreen(v.toString(), navigator) } },
+            onLongClick = {},
             content = { Text(row.label) },
         )
-        is JSONArray -> SegmentedListItem(
+        is JSONArray -> ScizorListItem(
             shapes = shapes,
             colors = scizorSegmentedColors(),
             supportingContent = { Text("[ ${v.length()} ]") },
             trailingContent = { Chevron() },
-            modifier = Modifier.combinedClickable(onClick = {
-                navigator.push(row.label) { JsonBrowserScreen(v.toString(), navigator) }
-            }, onLongClick = {}),
+            onClick = { navigator.push(row.label) { JsonBrowserScreen(v.toString(), navigator) } },
+            onLongClick = {},
             content = { Text(row.label) },
         )
-        else -> SegmentedListItem(
+        else -> ScizorListItem(
             shapes = shapes,
             colors = scizorSegmentedColors(),
             supportingContent = {
                 Text(v?.toString() ?: "null", maxLines = 3, overflow = TextOverflow.Ellipsis)
             },
-            modifier = Modifier.combinedClickable(
-                onClick = {},
-                onLongClick = { clipboard.setText(AnnotatedString("${row.label}: ${v?.toString() ?: "null"}")) },
-            ),
+            onClick = null,
+            onLongClick = { clipboard.setText(AnnotatedString("${row.label}: ${v?.toString() ?: "null"}")) },
             content = { Text(row.label) },
         )
     }

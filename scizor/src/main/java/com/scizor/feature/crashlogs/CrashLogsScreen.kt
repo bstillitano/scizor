@@ -1,5 +1,3 @@
-@file:OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
-
 package com.scizor.feature.crashlogs
 
 import android.content.Intent
@@ -23,9 +21,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -41,7 +37,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import com.scizor.feature.network.TextReaderScreen
+import com.scizor.ui.ScizorListItem
 import com.scizor.ui.ScizorNavigator
+import com.scizor.ui.ScizorSegmentedGap
 import com.scizor.ui.SectionHeader
 import com.scizor.ui.rememberSearchQuery
 import com.scizor.ui.rememberTopBarAction
@@ -51,6 +49,7 @@ import androidx.compose.material.icons.filled.SearchOff
 import androidx.compose.material.icons.filled.CheckCircle
 import com.scizor.ui.SegmentedColumn
 import com.scizor.ui.scizorSegmentedColors
+import com.scizor.ui.scizorSegmentedShapes
 import java.text.DateFormat
 import java.util.Date
 
@@ -86,12 +85,12 @@ internal fun CrashLogsScreen(navigator: ScizorNavigator) {
         } else {
             LazyColumn(
                 modifier = Modifier.fillMaxSize().padding(horizontal = SegmentInset),
-                verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap),
+                verticalArrangement = Arrangement.spacedBy(ScizorSegmentedGap),
                 contentPadding = PaddingValues(vertical = 12.dp),
             ) {
                 itemsIndexed(filtered, key = { _, it -> it.id }) { index, crash ->
-                    SegmentedListItem(
-                        shapes = ListItemDefaults.segmentedShapes(index = index, count = filtered.size),
+                    ScizorListItem(
+                        shapes = scizorSegmentedShapes(index = index, count = filtered.size),
                         colors = scizorSegmentedColors(),
                         overlineContent = { Text("${formatDate(crash.timestamp)}  ·  ${crash.appVersion}") },
                         supportingContent = { if (crash.message.isNotBlank()) Text(crash.message, maxLines = 2) },
@@ -159,7 +158,7 @@ private fun CrashDetailScreen(crash: CrashLog, navigator: ScizorNavigator) {
 
         SectionHeader("Stack Trace")
         SegmentedColumn(items = listOf("View stack trace")) { label, shapes ->
-            SegmentedListItem(
+            ScizorListItem(
                 onClick = { navigator.push("Stack Trace") { TextReaderScreen(crash.stackTrace) } },
                 shapes = shapes,
                 colors = scizorSegmentedColors(),
@@ -170,7 +169,7 @@ private fun CrashDetailScreen(crash: CrashLog, navigator: ScizorNavigator) {
 
         SectionHeader("Report")
         SegmentedColumn(items = listOf("Copy report", "Share report")) { label, shapes ->
-            SegmentedListItem(
+            ScizorListItem(
                 onClick = {
                     if (label.startsWith("Copy")) {
                         clipboard.setText(AnnotatedString(crash.fullReport()))
@@ -197,7 +196,7 @@ private fun CrashDetailScreen(crash: CrashLog, navigator: ScizorNavigator) {
 @Composable
 private fun InfoGroup(rows: List<Pair<String, String>>) {
     SegmentedColumn(items = rows) { (label, value), shapes ->
-        SegmentedListItem(
+        ScizorListItem(
             shapes = shapes,
             colors = scizorSegmentedColors(),
             supportingContent = { Text(value, style = MaterialTheme.typography.bodySmall) },

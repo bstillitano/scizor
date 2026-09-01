@@ -1,12 +1,10 @@
 @file:OptIn(
     androidx.compose.foundation.ExperimentalFoundationApi::class,
-    androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class,
 )
 
 package com.scizor.feature.network
 
 import android.content.Intent
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.heightIn
@@ -17,7 +15,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -28,6 +25,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.scizor.ui.ScizorListItem
 import com.scizor.ui.ScizorNavigator
 import com.scizor.ui.SectionHeader
 import com.scizor.ui.SegmentedColumn
@@ -84,7 +82,7 @@ internal fun NetworkDetailScreen(transaction: NetworkTransaction, navigator: Sci
         // Request cURL
         SectionHeader("Request")
         SegmentedColumn(items = listOf("Copy as cURL", "Share cURL")) { title, shapes ->
-            SegmentedListItem(
+            ScizorListItem(
                 onClick = {
                     val curl = transaction.toCurl()
                     if (title.startsWith("Copy")) clipboard.setText(AnnotatedString(curl)) else shareText(context, curl)
@@ -121,7 +119,7 @@ private fun RowGroup(rows: List<Row>) {
     val clipboard = LocalClipboardManager.current
     SegmentedColumn(items = rows) { row, shapes ->
         when (row) {
-            is Row.Value -> SegmentedListItem(
+            is Row.Value -> ScizorListItem(
                 shapes = shapes,
                 colors = scizorSegmentedColors(),
                 trailingContent = {
@@ -129,13 +127,11 @@ private fun RowGroup(rows: List<Row>) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1, overflow = TextOverflow.Ellipsis)
                 },
-                modifier = Modifier.combinedClickable(
-                    onClick = {},
-                    onLongClick = { clipboard.setText(AnnotatedString("${row.label}: ${row.value}")) },
-                ),
+                onClick = null,
+                onLongClick = { clipboard.setText(AnnotatedString("${row.label}: ${row.value}")) },
                 content = { Text(row.label) },
             )
-            is Row.Link -> SegmentedListItem(
+            is Row.Link -> ScizorListItem(
                 onClick = row.onOpen,
                 shapes = shapes,
                 colors = scizorSegmentedColors(),
@@ -156,14 +152,12 @@ private fun HeadersSection(title: String, headers: Map<String, String>, emptyTex
     }
     val clipboard = LocalClipboardManager.current
     SegmentedColumn(items = headers.entries.sortedBy { it.key }) { entry, shapes ->
-        SegmentedListItem(
+        ScizorListItem(
             shapes = shapes,
             colors = scizorSegmentedColors(),
             supportingContent = { Text(entry.value) },
-            modifier = Modifier.combinedClickable(
-                onClick = {},
-                onLongClick = { clipboard.setText(AnnotatedString("${entry.key}: ${entry.value}")) },
-            ),
+            onClick = null,
+            onLongClick = { clipboard.setText(AnnotatedString("${entry.key}: ${entry.value}")) },
             content = { Text(entry.key) },
         )
     }
@@ -194,7 +188,7 @@ private fun BodySection(
         if (isJson) add("Browse ${title.lowercase()}")
     }
     SegmentedColumn(items = links) { label, shapes ->
-        SegmentedListItem(
+        ScizorListItem(
             onClick = {
                 if (label.startsWith("Browse")) {
                     navigator.push(title) { JsonBrowserScreen(body, navigator) }
