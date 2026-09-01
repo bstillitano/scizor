@@ -119,6 +119,11 @@ build against:
 The menu renders on every device down to `minSdk` 24 — this is a **build-time** requirement,
 not a runtime one.
 
+Nothing in Scizor's own API needs `compileSdk` 37, AGP 9.1 or Gradle 9.3 any more: those rows
+are simply what this repository currently builds with, and an AAR published from a newer
+`compileSdk` cannot be consumed by an older one. If you need Scizor on an older toolchain, the
+change is to this repository's build configuration, not to any library it depends on.
+
 ## Installation
 
 Scizor is distributed via [JitPack](https://jitpack.io). Add the repository:
@@ -283,6 +288,10 @@ Scizor.developerOptions = listOf(
 Call `Scizor.dismiss()` directly to close the menu from anywhere, or set `dismissOnClick` on an
 `Action` for the common case above.
 
+Give every developer option a **unique title**. A row's identity is derived from its title, so
+two options sharing one collide — most visibly with `Toggle`, where the duplicate row ends up
+showing the other one's state.
+
 ### Environment Variables
 
 ```kotlin
@@ -416,6 +425,21 @@ Scizor.invocationGesture = ScizorGesture.NONE           // open manually via Sci
 Depending on `scizor-no-op` in release builds guarantees the debugging UI, Logcat reader, and
 network buffers are never included in your shipped app. Feature flags and server configuration
 still resolve to their registered defaults, so any host logic that reads them keeps working.
+
+### Where Scizor's own settings live
+
+Scizor persists its settings — feature flag overrides, the selected server, menu pins, the
+spoofed location — to **device-protected storage** (`/data/user_de/0/<pkg>/files`) rather than
+the credential-encrypted `filesDir` your app uses. Apps routinely wipe their own storage on
+sign-out, with `context.filesDir.deleteRecursively()` or
+`prefs.edit().clear().apply()`; neither reaches device-protected storage, so a QA build's
+overrides survive signing out and back in. This mirrors Scyther, which keeps its state in a
+named `UserDefaults` suite for the same reason — a persistent domain separate from the one the
+host app clears.
+
+A full container wipe still removes it: `ActivityManager.clearApplicationUserData()`, or the
+user choosing "Clear storage" in system settings. That is a deliberate reset rather than an
+accidental one, and Scyther has the same limit.
 
 ## API Reference
 

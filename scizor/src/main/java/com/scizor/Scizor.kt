@@ -84,9 +84,9 @@ object Scizor {
     /**
      * Ids of built-in features to hide from the menu.
      *
-     * For hosts shipping the real artifact in a signed QA build, where a Logcat
-     * reader or a keystore browser is a different risk conversation. See the
-     * README for the full id list.
+     * This exists for hosts that ship the real artifact in a signed QA build,
+     * where a Logcat reader or a keystore browser is a different risk
+     * conversation. See the README for the full id list.
      */
     var disabledFeatures: Set<String> by mutableStateOf(emptySet())
 
