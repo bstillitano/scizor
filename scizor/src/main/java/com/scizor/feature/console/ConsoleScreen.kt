@@ -1,5 +1,3 @@
-@file:OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
-
 package com.scizor.feature.console
 
 import androidx.compose.foundation.combinedClickable

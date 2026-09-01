@@ -1,7 +1,3 @@
-@file:OptIn(
-    androidx.compose.foundation.ExperimentalFoundationApi::class,
-)
-
 package com.scizor.feature.custom
 
 import androidx.compose.foundation.layout.Box

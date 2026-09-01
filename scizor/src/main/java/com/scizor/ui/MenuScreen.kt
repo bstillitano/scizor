@@ -1,12 +1,7 @@
-@file:OptIn(
-    androidx.compose.foundation.ExperimentalFoundationApi::class,
-)
-
 package com.scizor.ui
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -130,12 +125,12 @@ private fun InfoSegment(row: MenuRow.Info, shapes: ScizorListShapes) {
         colors = scizorSegmentedColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
         ),
-        leadingContent = row.icon?.let { icon ->
-            { LeadingIcon(icon) }
-        },
         onClick = null,
         onLongClick = {
             clipboard.setText(AnnotatedString("${row.label}: ${row.value}"))
+        },
+        leadingContent = row.icon?.let { icon ->
+            { LeadingIcon(icon) }
         },
         // Label and value share the row directly so the label (measured at its
         // intrinsic width) always keeps its line and the value yields, ellipsizing
@@ -225,11 +220,11 @@ private fun ToggleSegmentContent(
         colors = scizorSegmentedColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
         ),
+        onClick = { onToggle(!checked) },
+        onLongClick = {},
         leadingContent = { LeadingIcon(row.icon) },
         supportingContent = row.subtitle?.let { { Text(it) } },
         trailingContent = { Switch(checked = checked, onCheckedChange = onToggle) },
-        onClick = { onToggle(!checked) },
-        onLongClick = {},
         content = { Text(row.title) },
     )
 }
@@ -243,6 +238,10 @@ private fun ActionSegment(
     var menuOpen by remember { mutableStateOf(false) }
     Box {
         ScizorListItem(
+            shapes = shapes,
+            colors = scizorSegmentedColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+            ),
             onClick = {
                 when (val action = row.action) {
                     is MenuAction.Open -> navigator.push(action.title) { action.screen(navigator) }
@@ -250,10 +249,6 @@ private fun ActionSegment(
                 }
             },
             onLongClick = row.pinnableId?.let { { menuOpen = true } },
-            shapes = shapes,
-            colors = scizorSegmentedColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-            ),
             leadingContent = { LeadingIcon(row.icon) },
             supportingContent = row.subtitle?.let { { Text(it) } },
             trailingContent = {
