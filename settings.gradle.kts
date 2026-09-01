@@ -15,4 +15,4 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "scizor"
-include(":scizor", ":scizor-no-op", ":sample")
+include(":scizor", ":sample")

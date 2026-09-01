@@ -21,6 +21,7 @@ preferences, and reading logs. It is the Android counterpart to the iOS
 - [Features](#features)
 - [Requirements](#requirements)
 - [Installation](#installation)
+  - [Migrating from v0.1.0](#migrating-from-v010)
 - [Quick Start](#quick-start)
 - [Usage](#usage)
   - [Network Logging](#network-logging)
@@ -40,6 +41,8 @@ preferences, and reading logs. It is the Android counterpart to the iOS
 - [Permissions](#permissions)
 - [Menu Invocation](#menu-invocation)
 - [Production Safety](#production-safety)
+  - [Shipping Scizor in a release build](#shipping-scizor-in-a-release-build)
+  - [What Scizor adds to your manifest](#what-scizor-adds-to-your-manifest)
 - [API Reference](#api-reference)
 - [License](#license)
 
@@ -152,18 +155,77 @@ dependencyResolutionManagement {
 }
 ```
 
-Then depend on the full toolkit for debug builds and the no-op artifact for release builds:
+Then add the toolkit to your debug builds:
 
 ```kotlin
 // app/build.gradle.kts
 dependencies {
-    debugImplementation("com.github.bstillitano.scizor:scizor:v0.1.0")
-    releaseImplementation("com.github.bstillitano.scizor:scizor-no-op:v0.1.0")
+    debugImplementation("com.github.bstillitano.scizor:scizor:<tag>")
 }
 ```
 
-The `scizor-no-op` artifact exposes the identical public API as no-ops, so your code compiles
-and runs unchanged in release with zero debugging overhead.
+`<tag>` is a release tag from the [Releases](https://github.com/bstillitano/scizor/releases)
+page.
+
+There is one artifact, and `debugImplementation` is the whole production story: it is not on
+the release classpath, so the debugging UI, the Logcat reader, the network buffers and
+[Scizor's manifest entries](#what-scizor-adds-to-your-manifest) cannot be in your shipped app.
+
+Because the artifact is debug-only, the code that *calls* Scizor has to be debug-only too. The
+usual shape is a small initialiser with a release stub:
+
+```kotlin
+// src/debug/java/com/example/DebugTools.kt
+fun Application.initDebugTools() {
+    Scizor.start(this)
+    Scizor.featureFlags.register(FeatureFlag("new_checkout", "New checkout", defaultValue = false))
+}
+```
+
+```kotlin
+// src/release/java/com/example/DebugTools.kt
+fun Application.initDebugTools() = Unit
+```
+
+```kotlin
+// src/main/java/com/example/MyApp.kt — compiles in both variants
+class MyApp : Application() {
+    override fun onCreate() {
+        super.onCreate()
+        initDebugTools()
+    }
+}
+```
+
+If splitting source sets is not worth it to you, depend on Scizor with plain `implementation`
+instead and read [Shipping Scizor in a release build](#shipping-scizor-in-a-release-build) —
+`Scizor.start()` refuses to run in a release build unless you explicitly opt in.
+
+### Migrating from v0.1.0
+
+**Breaking change: the `scizor-no-op` artifact no longer exists.** Delete its line, or your
+release build will fail to resolve it:
+
+```diff
+ dependencies {
+     debugImplementation("com.github.bstillitano.scizor:scizor:<tag>")
+-    releaseImplementation("com.github.bstillitano.scizor:scizor-no-op:<tag>")
+ }
+```
+
+What replaces it depends on why you had it:
+
+- **You wanted Scizor out of release builds.** Nothing more to do; `debugImplementation` alone
+  is the guarantee. If your release build now fails to *compile* because `main` source
+  references `Scizor`, move those calls into a debug-only source set as shown above.
+- **You wanted your Scizor calls to keep compiling in release.** Change `debugImplementation`
+  to `implementation` so the real artifact is on both classpaths.
+  [`Scizor.start()` refuses to run](#shipping-scizor-in-a-release-build) in a non-debuggable
+  build, so the toolkit stays inert unless you pass `allowProductionBuilds = true`.
+
+The no-op was a hand-mirrored copy of every public symbol, policed by a compile-time parity
+file and published as a second artifact. The `start()` gate covers the case it existed for at
+a fraction of the cost, so it is gone.
 
 ## Quick Start
 
@@ -187,6 +249,9 @@ val client = OkHttpClient.Builder()
 ```
 
 Now **shake the device** (or call `Scizor.show()`) to open the debug menu.
+
+With the default `debugImplementation` wiring these calls belong in a debug-only source set —
+see [Installation](#installation).
 
 ## Usage
 
@@ -455,7 +520,9 @@ first use:
   Developer options
 - **Notification Tester** — POST_NOTIFICATIONS on Android 13+
 
-All of these are debug-only; the `scizor-no-op` release artifact declares none of them.
+With the default `debugImplementation` wiring all of this is debug-only and never reaches
+your release build. If you ship the real artifact in release, see
+[What Scizor adds to your manifest](#what-scizor-adds-to-your-manifest).
 
 ## Menu Invocation
 
@@ -469,27 +536,90 @@ Scizor.invocationGesture = ScizorGesture.NONE           // open manually via Sci
 
 ## Production Safety
 
-Depending on `scizor-no-op` in release builds guarantees the debugging UI, Logcat reader, and
-network buffers are never included in your shipped app. Feature flags and server configuration
-still resolve to their registered defaults, so any host logic that reads them keeps working.
+Wiring Scizor with `debugImplementation` is the strongest guarantee there is: the artifact is
+not on the release classpath, so the debugging UI, the Logcat reader, the network buffers and
+Scizor's manifest entries are not in your shipped app at all. That is the default, and for
+most apps it is the end of the subject.
 
-### The production gate
+Scizor used to ship a second artifact, `scizor-no-op`, so that release builds could still
+compile against the API. It has been removed — see
+[Migrating from v0.1.0](#migrating-from-v010).
 
-`Scizor.start()` is guarded too, so the real artifact ending up in a release build is not
-enough to make it run. It starts only when the app is **debuggable** — true for debug builds
-and for internal-distribution builds deliberately signed as debuggable, false for anything
-shipped through the Play Store. When it refuses, nothing is captured, installed or observed,
-and it writes a warning to Logcat saying why.
+### Shipping Scizor in a release build
 
-Override it deliberately when that is what you mean:
+Sometimes the real toolkit in a non-debug build is the point: a signed QA build that leaves
+the building, or a production app that unlocks the menu behind a hidden gesture. Depend on it
+unconditionally:
+
+```kotlin
+dependencies {
+    implementation("com.github.bstillitano.scizor:scizor:<tag>")
+}
+```
+
+`Scizor.start()` will still refuse to run. It starts only when the app is **debuggable** —
+true for debug builds and for internal-distribution builds deliberately signed as debuggable,
+false for anything shipped through the Play Store. When it refuses, nothing is captured,
+installed or observed: no Logcat capture, no crash handler, no overlays, no shake detector.
+It writes a warning to Logcat saying why, so a build where "nothing happens" is never a
+mystery.
+
+Opt in deliberately:
 
 ```kotlin
 Scizor.start(this, allowProductionBuilds = true)
+Scizor.disabledFeatures = setOf("keystore", "console", "preferences")
 ```
 
-That is for a signed QA build, or a menu unlocked behind a hidden gesture. Pair it with
-[`Scizor.disabledFeatures`](#disabled-features) to keep the riskier tools out of a build that
-leaves the building. This mirrors Scyther's `Scyther.start(allowProductionBuilds:)` on iOS.
+[`Scizor.disabledFeatures`](#disabled-features) exists for exactly this case — a Logcat
+reader, an editable Preferences Browser and a Keystore Browser are a different risk
+conversation in a build that leaves the building. This mirrors Scyther's
+`Scyther.start(allowProductionBuilds:)` on iOS.
+
+### What Scizor adds to your manifest
+
+Scizor's library manifest is merged into your app's, so shipping the real artifact means
+shipping these. With one artifact this is **opt-out rather than absent by default**:
+
+| Entry | Why it is there | What a user or reviewer sees |
+|---|---|---|
+| `SYSTEM_ALERT_WINDOW` permission | the grid, FPS and touch overlays draw over the whole screen | "Display over other apps", including a line in your Play Store listing's permission list |
+| `INTERNET`, `ACCESS_NETWORK_STATE` | OpenStreetMap tiles for the Location Spoofer map | nothing (almost every app declares these) |
+| `ScizorNotificationListenerService` | feeds the Notification Logger | an entry under Settings → Apps → Special app access → Notification access |
+| `ScizorActivity` | hosts the menu | nothing — not exported, no launcher entry |
+| `ScizorFileProvider` | shares files out of the File Browser | nothing |
+
+The first and third are the user-visible ones. Drop them with a manifest merger override,
+scoped to the release source set so your debug builds keep them:
+
+```xml
+<!-- app/src/release/AndroidManifest.xml -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <uses-permission
+        android:name="android.permission.SYSTEM_ALERT_WINDOW"
+        tools:node="remove" />
+    <service
+        android:name="com.scizor.feature.notifications.ScizorNotificationListenerService"
+        tools:node="remove" />
+
+</manifest>
+```
+
+Removing the service disables the **Notification Logger** — there is nothing left to receive
+the notifications. Removing the permission disables the **Grid Overlay**, **FPS Counter** and
+**Touch Visualiser**, which have no window to draw into without it. Hide them from the menu
+too, so they are not offered and then broken:
+
+```kotlin
+Scizor.disabledFeatures = setOf(
+    "notification_logger", "grid_overlay", "fps_counter", "touch_visualiser",
+)
+```
+
+None of this applies to the default `debugImplementation` wiring — the library manifest is
+never merged into a release build in the first place.
 
 ### Where Scizor's own settings live
 

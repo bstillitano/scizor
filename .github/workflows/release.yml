@@ -25,8 +25,8 @@ jobs:
 
       - name: Build and test
         run: |
-          ./gradlew :scizor:assembleRelease :scizor-no-op:assembleRelease \
-                    :scizor:testDebugUnitTest :sample:assembleDebug :sample:assembleRelease
+          ./gradlew :scizor:assembleRelease :scizor:testDebugUnitTest \
+                    :sample:assembleDebug :sample:assembleRelease
 
       - name: Create GitHub release
         uses: softprops/action-gh-release@v2
@@ -46,12 +46,10 @@ jobs:
         # will build on demand regardless. A slow cold build can exceed the timeout
         # and still succeed.
         run: |
-          for artifact in scizor scizor-no-op; do
-            url="https://jitpack.io/com/github/bstillitano/scizor/${artifact}/${GITHUB_REF_NAME}/${artifact}-${GITHUB_REF_NAME}.pom"
-            if curl -fsS -m 600 -o /dev/null "$url"; then
-              echo "JitPack has built and served ${artifact} ${GITHUB_REF_NAME}"
-            else
-              echo "Could not warm ${artifact} ${GITHUB_REF_NAME} — the first consumer to"
-              echo "resolve it will trigger the build. See https://jitpack.io/#bstillitano/scizor"
-            fi
-          done
+          url="https://jitpack.io/com/github/bstillitano/scizor/scizor/${GITHUB_REF_NAME}/scizor-${GITHUB_REF_NAME}.pom"
+          if curl -fsS -m 600 -o /dev/null "$url"; then
+            echo "JitPack has built and served scizor ${GITHUB_REF_NAME}"
+          else
+            echo "Could not warm scizor ${GITHUB_REF_NAME} — the first consumer to"
+            echo "resolve it will trigger the build. See https://jitpack.io/#bstillitano/scizor"
+          fi

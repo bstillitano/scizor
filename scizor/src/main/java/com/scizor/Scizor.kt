@@ -33,8 +33,9 @@ import com.scizor.feature.servers.ServerConfiguration
  * ```
  * then shake the device (default) or call [show] to open the debug menu.
  *
- * In release builds, depend on the `scizor-no-op` artifact instead, which
- * provides this same API as no-ops.
+ * Wire the artifact with `debugImplementation` so it is not in release builds
+ * at all. If you do ship it in a release build, [start] refuses to run unless
+ * you pass `allowProductionBuilds = true`.
  */
 object Scizor {
 

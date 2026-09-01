@@ -41,8 +41,7 @@ kotlin {
 }
 
 dependencies {
-    debugImplementation(project(":scizor"))
-    releaseImplementation(project(":scizor-no-op"))
+    implementation(project(":scizor"))
 
     // Enables the Deep Link Tester's QR scanner in debug builds (optional in Scizor).
     debugImplementation(libs.play.services.code.scanner)
@@ -62,8 +61,4 @@ dependencies {
 
     // OpenStreetMap view for the Location tab (no API key required).
     implementation(libs.osmdroid.android)
-
-    // Lets ScizorApiSurface.kt reference `Scizor.network.ktorPlugin()` so the
-    // scizor / scizor-no-op parity check covers it. Not used at runtime.
-    compileOnly(libs.ktor.client.core)
 }
