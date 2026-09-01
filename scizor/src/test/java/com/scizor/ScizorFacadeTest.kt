@@ -104,4 +104,25 @@ class ScizorFacadeTest {
             Scizor.fcmToken = null
         }
     }
+
+    @Test
+    fun `disabled features are hidden from the menu`() {
+        val app = RuntimeEnvironment.getApplication()
+        Scizor.start(app)
+
+        try {
+            Scizor.disabledFeatures = setOf("keystore", "console")
+
+            val titles = com.scizor.ui.MenuViewModel().groups(app, null, emptyList())
+                .flatMap { it.rows }
+                .filterIsInstance<com.scizor.ui.MenuRow.Action>()
+                .map { it.title }
+
+            assertFalse(titles.contains("Keystore Browser"))
+            assertFalse(titles.contains("Console Logger"))
+            assertTrue(titles.contains("Feature Flags"))
+        } finally {
+            Scizor.disabledFeatures = emptySet()
+        }
+    }
 }

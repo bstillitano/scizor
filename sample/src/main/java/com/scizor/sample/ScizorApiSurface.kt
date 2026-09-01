@@ -70,6 +70,7 @@ internal fun scizorApiSurface(application: Application) {
             override fun rows(table: String, limit: Int, offset: Int): List<List<String>> = emptyList()
         },
     )
+    Scizor.disabledFeatures = setOf("keystore")
     val network: NetworkLogger = Scizor.network
     val flags: FeatureFlags = Scizor.featureFlags
     val servers: ServerConfiguration = Scizor.servers

@@ -79,6 +79,15 @@ object Scizor {
     /** Host-provided custom database sources shown in the Database Browser. */
     var databaseAdapters: List<com.scizor.feature.databasebrowser.ScizorDatabaseAdapter> by mutableStateOf(emptyList())
 
+    /**
+     * Ids of built-in features to hide from the menu.
+     *
+     * For hosts shipping the real artifact in a signed QA build, where a Logcat
+     * reader or a keystore browser is a different risk conversation. See the
+     * README for the full id list.
+     */
+    var disabledFeatures: Set<String> by mutableStateOf(emptySet())
+
     /** HTTP traffic logger. Add [NetworkLogger.interceptor] to your OkHttpClient. */
     val network: NetworkLogger get() = NetworkLogger
 

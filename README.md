@@ -35,6 +35,7 @@ preferences, and reading logs. It is the Android counterpart to the iOS
   - [Deep Link Presets](#deep-link-presets)
   - [Custom Databases](#custom-databases)
   - [Appearance Font Scale](#appearance-font-scale)
+- [Disabled Features](#disabled-features)
 - [Permissions](#permissions)
 - [Menu Invocation](#menu-invocation)
 - [Production Safety](#production-safety)
@@ -341,6 +342,42 @@ override fun attachBaseContext(base: Context) {
 }
 ```
 
+## Disabled Features
+
+`Scizor.disabledFeatures` hides built-in menu entries by id. The default (all built-ins
+enabled) is right for a debug-only dependency; it stops being right for a host shipping the
+real `scizor` artifact in a signed QA build that leaves the building — a Logcat reader, an
+editable Preferences Browser, and a Keystore Browser are a different risk conversation there.
+Set it once, before or after `Scizor.start()`:
+
+```kotlin
+Scizor.disabledFeatures = setOf("keystore", "console", "preferences")
+```
+
+| Id | Feature |
+|---|---|
+| `network` | Network Logger |
+| `servers` | Server Configuration |
+| `environment_variables` | Environment Variables |
+| `feature_flags` | Feature Flags |
+| `preferences` | Preferences Browser |
+| `cookies` | Cookie Browser |
+| `file_browser` | File Browser |
+| `database_browser` | Database Browser |
+| `keystore` | Keystore Browser |
+| `location` | Location Spoofer |
+| `console` | Console Logger |
+| `deep_link` | Deep Link Tester |
+| `crash_logs` | Crash Logs |
+| `notification_logger` | Notification Logger |
+| `notification_tester` | Notification Tester |
+| `fonts` | Fonts |
+| `interface_previews` | Interface Previews |
+| `grid_overlay` | Grid Overlay |
+| `fps_counter` | FPS Counter |
+| `touch_visualiser` | Touch Visualiser |
+| `appearance` | Appearance |
+
 ## Permissions
 
 Scizor requests everything it needs at runtime, from within the menu — nothing is required in
@@ -392,6 +429,7 @@ still resolve to their registered defaults, so any host logic that reads them ke
 | `Scizor.interfacePreviews` | Host Composables to preview (name + optional description) |
 | `Scizor.deepLinkPresets` | One-tap deep links for the tester |
 | `Scizor.databaseAdapters` | Read-only custom database sources for the browser |
+| `Scizor.disabledFeatures` | Ids of built-in features to hide from the menu |
 | `Scizor.wrapAppearance(base)` | Apply the appearance font-scale override in `attachBaseContext` |
 
 ## License

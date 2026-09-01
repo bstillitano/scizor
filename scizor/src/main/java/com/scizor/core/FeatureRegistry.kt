@@ -34,7 +34,10 @@ internal object FeatureRegistry {
         entries.add(entry)
     }
 
-    fun all(): List<ScizorMenuEntry> = entries.toList()
+    fun all(): List<ScizorMenuEntry> {
+        val disabled = com.scizor.Scizor.disabledFeatures
+        return if (disabled.isEmpty()) entries.toList() else entries.filterNot { it.id in disabled }
+    }
 
     fun clear() = entries.clear()
 }
