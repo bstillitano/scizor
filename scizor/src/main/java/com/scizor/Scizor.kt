@@ -37,6 +37,8 @@ import com.scizor.feature.servers.ServerConfiguration
  */
 object Scizor {
 
+    private const val TAG = "Scizor"
+
     private var application: Application? = null
     private var shakeDetector: ShakeDetector? = null
 
@@ -137,11 +139,22 @@ object Scizor {
 
     /** Opens the debug menu. No-op if [start] has not been called. */
     fun show() {
-        val context = application ?: return
+        val context = application
+        if (context == null) {
+            android.util.Log.w(TAG, "show() ignored — Scizor.start(application) has not been called")
+            return
+        }
         runCatching {
             val intent = Intent(context, ScizorActivity::class.java)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             context.startActivity(intent)
+        }.onFailure {
+            android.util.Log.w(
+                TAG,
+                "show() failed to start ScizorActivity — check that the scizor artifact " +
+                    "is on this variant's classpath so its manifest entry is merged in",
+                it,
+            )
         }
     }
 
