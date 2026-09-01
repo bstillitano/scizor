@@ -19,7 +19,7 @@
 
         <!-- Serves app-sandbox files to external viewers when sharing / opening from the File Browser. -->
         <provider
-            android:name="androidx.core.content.FileProvider"
+            android:name="com.scizor.core.ScizorFileProvider"
             android:authorities="${applicationId}.scizor.fileprovider"
             android:exported="false"
             android:grantUriPermissions="true">
