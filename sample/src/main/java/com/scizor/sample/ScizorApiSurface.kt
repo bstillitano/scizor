@@ -1,12 +1,15 @@
 package com.scizor.sample
 
 import android.app.Application
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import com.scizor.Scizor
 import com.scizor.ScizorGesture
 import com.scizor.feature.console.ConsoleLogger
 import com.scizor.feature.console.LogEntry
 import com.scizor.feature.console.LogLevel
 import com.scizor.feature.custom.DeveloperOption
+import com.scizor.feature.custom.ScizorIcon
 import com.scizor.feature.deviceinfo.DeviceInfo
 import com.scizor.feature.deviceinfo.InfoRow
 import com.scizor.feature.featureflags.FeatureFlag
@@ -38,6 +41,8 @@ internal fun scizorApiSurface(application: Application) {
     Scizor.invocationGesture = ScizorGesture.SHAKE
     Scizor.invocationGesture = ScizorGesture.FLOATING_BUTTON
     Scizor.invocationGesture = ScizorGesture.NONE
+    val vectorIcon: ScizorIcon = ScizorIcon.Vector(Icons.Filled.Close)
+    val resourceIcon: ScizorIcon = ScizorIcon.Resource(android.R.drawable.ic_menu_info_details)
     Scizor.developerOptions = listOf(
         DeveloperOption(title = "x", icon = null) {},
         DeveloperOption(title = "v", value = "1"),
