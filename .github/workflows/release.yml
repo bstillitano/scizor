@@ -46,7 +46,11 @@ jobs:
         # will build on demand regardless. A slow cold build can exceed the timeout
         # and still succeed.
         run: |
-          url="https://jitpack.io/com/github/bstillitano/scizor/scizor/${GITHUB_REF_NAME}/scizor-${GITHUB_REF_NAME}.pom"
+          # Single published module, so JitPack serves this as com.github.{owner}:{repo}.
+          # A multi-module project is com.github.{owner}.{repo}:{module} instead — the
+          # shape of the project decides the coordinates, and it changed when the
+          # scizor-no-op module was removed.
+          url="https://jitpack.io/com/github/bstillitano/scizor/${GITHUB_REF_NAME}/scizor-${GITHUB_REF_NAME}.pom"
           if curl -fsS -m 600 -o /dev/null "$url"; then
             echo "JitPack has built and served scizor ${GITHUB_REF_NAME}"
           else

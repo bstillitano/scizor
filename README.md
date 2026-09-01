@@ -160,7 +160,7 @@ Then add the toolkit:
 ```kotlin
 // app/build.gradle.kts
 dependencies {
-    implementation("com.github.bstillitano.scizor:scizor:v0.2.0")
+    implementation("com.github.bstillitano:scizor:v0.2.0")
 }
 ```
 
@@ -180,7 +180,7 @@ If you want nothing at all in your shipped app, use `debugImplementation` instea
 
 ```kotlin
 dependencies {
-    debugImplementation("com.github.bstillitano.scizor:scizor:v0.2.0")
+    debugImplementation("com.github.bstillitano:scizor:v0.2.0")
 }
 ```
 
@@ -214,6 +214,19 @@ class MyApp : Application() {
 ```
 
 ### Migrating from v0.1.0
+
+**Breaking change: the group id has changed.** JitPack derives coordinates from how many
+modules a project publishes — `com.github.{owner}.{repo}:{module}` for several, and
+`com.github.{owner}:{repo}` for one. Removing `scizor-no-op` took Scizor from two published
+modules to one, so the group lost its `.scizor` suffix:
+
+```diff
+-implementation("com.github.bstillitano.scizor:scizor:v0.1.0")
++implementation("com.github.bstillitano:scizor:v0.2.0")
+```
+
+The old coordinates still resolve for `v0.1.0` and always will; they simply do not exist for
+`v0.2.0` onwards.
 
 **Breaking change: the `scizor-no-op` artifact no longer exists.** Delete its line, or your
 release build will fail to resolve it:
@@ -566,7 +579,7 @@ unconditionally:
 
 ```kotlin
 dependencies {
-    implementation("com.github.bstillitano.scizor:scizor:v0.2.0")
+    implementation("com.github.bstillitano:scizor:v0.2.0")
 }
 ```
 
