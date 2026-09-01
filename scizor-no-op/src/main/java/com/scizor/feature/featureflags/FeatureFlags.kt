@@ -26,7 +26,9 @@ object FeatureFlags {
 
     fun remoteValue(key: String): Boolean = flags[key]?.defaultValue ?: false
 
-    var overridesEnabled: Boolean = true
+    var overridesEnabled: Boolean = false
+
+    var onOverrideChanged: ((key: String?) -> Unit)? = null
 
     fun isEnabled(key: String): Boolean = flags[key]?.defaultValue ?: false
 

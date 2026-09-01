@@ -198,6 +198,14 @@ if (Scizor.featureFlags.isEnabled("new_checkout")) {
 Toggle flags from the **Feature Flags** screen. Overrides persist across launches; "Reset to
 default" clears them. In release builds, `isEnabled` returns the registered default.
 
+`overridesEnabled` defaults to `false`, matching Scyther. While it's off, every flag follows
+its registered default and the Feature Flags screen says so, rather than showing toggles that
+do nothing — a tester turns it on once, from the screen or via `Scizor.featureFlags.overridesEnabled
+= true`. For hosts that keep their own feature-flag manager and want Scizor to own only the
+flags UI, set `Scizor.featureFlags.onOverrideChanged`: it's invoked after any override changes,
+with the affected key (`null` for a reset-all or an `overridesEnabled` toggle), so the host can
+react to a flip instead of only reading `isEnabled`/`overrideState` on demand.
+
 ### Server Configuration
 
 ```kotlin

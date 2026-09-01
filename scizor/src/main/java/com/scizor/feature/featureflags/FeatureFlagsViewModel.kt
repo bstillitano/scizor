@@ -14,7 +14,7 @@ internal data class FlagUi(
 )
 
 internal data class FeatureFlagsUiState(
-    val overridesEnabled: Boolean = true,
+    val overridesEnabled: Boolean = false,
     val flags: List<FlagUi> = emptyList(),
 )
 

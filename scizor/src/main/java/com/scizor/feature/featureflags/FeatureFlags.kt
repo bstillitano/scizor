@@ -37,11 +37,23 @@ object FeatureFlags {
     /** Remote/baseline value for a flag (its registered default). */
     fun remoteValue(key: String): Boolean = flags[key]?.defaultValue ?: false
 
+    /**
+     * Invoked after any override changes, with the affected key — or null when
+     * every flag is affected at once ([resetAllToRemote], or toggling
+     * [overridesEnabled]).
+     *
+     * For hosts that keep their own flag manager and want Scizor to own only the
+     * flags UI: a flag whose flip has a side effect elsewhere needs somewhere to
+     * run it.
+     */
+    var onOverrideChanged: ((key: String?) -> Unit)? = null
+
     /** Whether local overrides are honored at all. Off by default, matching Scyther. */
     var overridesEnabled: Boolean
         get() = Scizor.storeOrNull()?.boolean(OVERRIDES_ENABLED, false) ?: false
         set(value) {
             Scizor.storeOrNull()?.putBoolean(OVERRIDES_ENABLED, value)
+            onOverrideChanged?.invoke(null)
         }
 
     fun isEnabled(key: String): Boolean {
@@ -64,6 +76,7 @@ object FeatureFlags {
             FlagOverride.OFF -> store.putBoolean(storeKey(key), false)
             FlagOverride.REMOTE -> store.remove(storeKey(key))
         }
+        onOverrideChanged?.invoke(key)
     }
 
     fun isOverridden(key: String): Boolean =
@@ -73,6 +86,7 @@ object FeatureFlags {
     fun resetAllToRemote() {
         val store = Scizor.storeOrNull() ?: return
         flags.keys.forEach { store.remove(storeKey(it)) }
+        onOverrideChanged?.invoke(null)
     }
 
     fun pinnedKeys(): List<String> =

@@ -104,6 +104,8 @@ internal fun scizorApiSurface(application: Application) {
     flags.setOverride("k", FlagOverride.OFF)
     flags.setOverride("k", FlagOverride.REMOTE)
     flags.resetAllToRemote()
+    flags.onOverrideChanged = { key: String? -> key?.length }
+    flags.onOverrideChanged = null
     flags.pinnedKeys()
     flags.isPinned("k")
     flags.togglePin("k")

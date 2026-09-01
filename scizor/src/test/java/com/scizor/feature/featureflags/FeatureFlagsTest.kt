@@ -62,4 +62,53 @@ class FeatureFlagsTest {
         FeatureFlags.resetAllToRemote()
         assertEquals(FlagOverride.REMOTE, FeatureFlags.overrideState("ff_reset"))
     }
+
+    @Test
+    fun `setOverride notifies with the affected key`() {
+        FeatureFlags.register(FeatureFlag("ff_notify", "Notify", defaultValue = true))
+        val seen = mutableListOf<String?>()
+        FeatureFlags.onOverrideChanged = { seen.add(it) }
+
+        try {
+            FeatureFlags.setOverride("ff_notify", FlagOverride.OFF)
+            assertEquals(listOf<String?>("ff_notify"), seen)
+        } finally {
+            FeatureFlags.onOverrideChanged = null
+        }
+    }
+
+    @Test
+    fun `resetAllToRemote notifies with null`() {
+        FeatureFlags.register(FeatureFlag("ff_reset_notify", "Reset", defaultValue = true))
+        FeatureFlags.setOverride("ff_reset_notify", FlagOverride.OFF)
+
+        val seen = mutableListOf<String?>()
+        FeatureFlags.onOverrideChanged = { seen.add(it) }
+
+        try {
+            FeatureFlags.resetAllToRemote()
+            assertEquals(listOf<String?>(null), seen)
+        } finally {
+            FeatureFlags.onOverrideChanged = null
+        }
+    }
+
+    @Test
+    fun `toggling overridesEnabled notifies with null`() {
+        val seen = mutableListOf<String?>()
+        FeatureFlags.onOverrideChanged = { seen.add(it) }
+
+        try {
+            FeatureFlags.overridesEnabled = false
+            FeatureFlags.overridesEnabled = true
+            assertEquals(listOf<String?>(null, null), seen)
+        } finally {
+            FeatureFlags.onOverrideChanged = null
+        }
+    }
+
+    @Test
+    fun `the ui state default matches the store default`() {
+        assertEquals(FeatureFlagsUiState().overridesEnabled, false)
+    }
 }
