@@ -24,6 +24,7 @@ preferences, and reading logs. It is the Android counterpart to the iOS
 - [Quick Start](#quick-start)
 - [Usage](#usage)
   - [Network Logging](#network-logging)
+  - [Ktor](#ktor)
   - [Feature Flags](#feature-flags)
   - [Server Configuration](#server-configuration)
   - [Preferences Browser](#preferences-browser)
@@ -51,10 +52,10 @@ The debug menu mirrors the iOS Scyther layout, grouped into sections.
 - App name, package, version, build number, and install date
 
 ### Networking
-- **Network Logger** — an OkHttp interceptor that captures every request/response, with
-  headers, body, status, and timing. Pretty-prints JSON and XML, renders image responses
-  inline, decodes GraphQL operations (including batched requests), and exports any request
-  as a runnable `curl` command
+- **Network Logger** — an OkHttp interceptor (and a Ktor client plugin) that captures every
+  request/response, with headers, body, status, and timing. Pretty-prints JSON and XML,
+  renders image responses inline, decodes GraphQL operations (including batched requests),
+  and exports any request as a runnable `curl` command
 - **Server Configuration** — switch between environments (e.g. development, staging,
   production), each with its own base URL and variables
 - **Environment Variables** — surface any key/value pairs you want visible
@@ -199,6 +200,40 @@ OkHttpClient.Builder()
 
 Every request is captured into the **Network Logger** screen. Tap a transaction to see its
 headers, body, status, and timing, and to copy it as a `curl` command.
+
+Retrofit needs nothing extra — it sits on OkHttp, so the interceptor above already covers it.
+
+### Ktor
+
+There are two routes, and which one you need depends only on your engine.
+
+**On the OkHttp engine — nothing new to add.** The engine exposes the underlying OkHttp
+client, so the interceptor you already have is all it takes. No extra dependency, no plugin:
+
+```kotlin
+HttpClient(OkHttp) {
+    engine { addInterceptor(Scizor.network.interceptor()) }
+}
+```
+
+**On any other engine (CIO, Android, Java)** there is no OkHttp client to hook, so install
+Scizor's Ktor plugin instead:
+
+```kotlin
+HttpClient(CIO) {
+    install(Scizor.network.ktorPlugin())
+}
+```
+
+It records the same fields as the interceptor — method, URL, headers, request and response
+bodies, status, duration, content type, GraphQL operation details — into the same Network
+Logger screen. The response body is captured through Ktor's `ResponseObserver`, which tees
+the response channel, so your code still receives a completely unread stream; capture never
+alters or fails the call it observes.
+
+`ktor-client-core` is a `compileOnly` dependency of Scizor, so Scizor never puts Ktor on your
+classpath and apps that don't use Ktor pay nothing for it. `ktorPlugin()` requires Ktor 3.x
+to already be a dependency of your app — which it is, if you are calling it.
 
 ### Feature Flags
 
@@ -462,6 +497,7 @@ accidental one, and Scyther has the same limit.
 | `Scizor.dismiss()` | Close the menu if it is open; no-op otherwise |
 | `Scizor.invocationGesture` | `SHAKE` / `FLOATING_BUTTON` / `NONE` |
 | `Scizor.network.interceptor()` | OkHttp interceptor for logging |
+| `Scizor.network.ktorPlugin()` | Ktor client plugin for logging (non-OkHttp engines) |
 | `Scizor.featureFlags` | `register`, `isEnabled`, `override` |
 | `Scizor.servers` | `configure`, `select`, `baseUrl` |
 | `Scizor.preferences` | Read/edit `SharedPreferences` |
