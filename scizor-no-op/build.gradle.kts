@@ -1,6 +1,9 @@
 plugins {
     alias(libs.plugins.android.library)
+    `maven-publish`
 }
+
+version = "0.1.0"
 
 android {
     namespace = "com.scizor"
@@ -15,6 +18,11 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
+    publishing {
+        singleVariant("release") {
+            withSourcesJar()
+        }
+    }
 }
 
 kotlin {
@@ -28,4 +36,16 @@ dependencies {
     implementation(libs.okhttp)
     implementation(libs.coroutines.android)
     implementation(libs.compose.ui)
+}
+
+// JitPack derives the group and artifact id from the repository coordinates
+// (com.github.bstillitano.scizor:scizor-no-op), so only the version needs setting.
+afterEvaluate {
+    publishing {
+        publications {
+            create<MavenPublication>("release") {
+                from(components["release"])
+            }
+        }
+    }
 }

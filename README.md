@@ -139,8 +139,8 @@ Then depend on the full toolkit for debug builds and the no-op artifact for rele
 ```kotlin
 // app/build.gradle.kts
 dependencies {
-    debugImplementation("com.github.bstillitano.scizor:scizor:<tag>")
-    releaseImplementation("com.github.bstillitano.scizor:scizor-no-op:<tag>")
+    debugImplementation("com.github.bstillitano.scizor:scizor:v0.1.0")
+    releaseImplementation("com.github.bstillitano.scizor:scizor-no-op:v0.1.0")
 }
 ```
 
