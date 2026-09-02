@@ -78,12 +78,18 @@ dependencies {
     // dependency footprint — only apps that already use Ktor ever call it.
     compileOnly(libs.ktor.client.core)
 
+    // Optional: `Scizor.network.apolloInterceptor()` returns an Apollo Kotlin 4 HTTP
+    // interceptor for hosts using Apollo on any engine. Same compileOnly deal as Ktor —
+    // only apps that already ship Apollo ever load the class.
+    compileOnly(libs.apollo.runtime)
+
     testImplementation(libs.junit)
     testImplementation(libs.robolectric)
     testImplementation(libs.coroutines.test)
     testImplementation(libs.mockwebserver)
     testImplementation(libs.ktor.client.core)
     testImplementation(libs.ktor.client.mock)
+    testImplementation(libs.apollo.runtime)
 }
 
 // JitPack derives the group and artifact id from the repository coordinates

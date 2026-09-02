@@ -25,6 +25,7 @@ preferences, and reading logs. It is the Android counterpart to the iOS
 - [Usage](#usage)
   - [Network Logging](#network-logging)
   - [Ktor](#ktor)
+  - [Apollo GraphQL](#apollo-graphql)
   - [Feature Flags](#feature-flags)
   - [Server Configuration](#server-configuration)
   - [Preferences Browser](#preferences-browser)
@@ -54,7 +55,8 @@ The debug menu mirrors the iOS Scyther layout, grouped into sections.
 - App name, package, version, build number, and install date
 
 ### Networking
-- **Network Logger** — an OkHttp interceptor (and a Ktor client plugin) that captures every
+- **Network Logger** — an OkHttp interceptor (plus a Ktor client plugin and an Apollo
+  interceptor) that captures every
   request/response, with headers, body, status, and timing. Pretty-prints JSON and XML,
   renders image responses inline, decodes GraphQL operations (including batched requests),
   and exports any request as a runnable `curl` command
@@ -284,6 +286,30 @@ alters or fails the call it observes.
 `ktor-client-core` is a `compileOnly` dependency of Scizor, so Scizor never puts Ktor on your
 classpath and apps that don't use Ktor pay nothing for it. `ktorPlugin()` requires Ktor 3.x
 to already be a dependency of your app — which it is, if you are calling it.
+
+### Apollo GraphQL
+
+Add Scizor's interceptor to your `ApolloClient` — it works on every engine Apollo supports:
+
+```kotlin
+ApolloClient.Builder()
+    .serverUrl("https://example.com/graphql")
+    .addHttpInterceptor(Scizor.network.apolloInterceptor())
+    .build()
+```
+
+Every operation lands in the Network Logger with its GraphQL details decoded — operation
+name, operation type, variables — alongside the usual method, URL, headers, bodies, status,
+and timing. The response body is observed through okio's `peek()`, a duplicate view of the
+stream, so Apollo still parses an untouched response; capture never alters or fails the
+operation it observes.
+
+If your `ApolloClient` is built on a custom OkHttp client, `addInterceptor(Scizor.network.interceptor())`
+on that client works just as well — pick one route, not both, or every operation is logged twice.
+
+`apollo-runtime` is a `compileOnly` dependency of Scizor, so Scizor never puts Apollo on your
+classpath. `apolloInterceptor()` requires Apollo Kotlin 4.x; on Apollo Kotlin 3.x (the
+`com.apollographql.apollo3` packages) use the OkHttp route above instead.
 
 ### Feature Flags
 
@@ -627,6 +653,7 @@ accidental one, and Scyther has the same limit.
 | `Scizor.invocationGesture` | `SHAKE` / `FLOATING_BUTTON` / `NONE` |
 | `Scizor.network.interceptor()` | OkHttp interceptor for logging |
 | `Scizor.network.ktorPlugin()` | Ktor client plugin for logging (non-OkHttp engines) |
+| `Scizor.network.apolloInterceptor()` | Apollo Kotlin 4 HTTP interceptor for logging |
 | `Scizor.featureFlags` | `register`, `isEnabled`, `override` |
 | `Scizor.servers` | `configure`, `select`, `baseUrl` |
 | `Scizor.preferences` | Read/edit `SharedPreferences` |
