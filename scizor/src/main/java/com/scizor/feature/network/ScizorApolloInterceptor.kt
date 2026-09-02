@@ -11,7 +11,7 @@ import okio.Buffer
 private const val MAX_BODY_BYTES = 1_000_000L
 
 /**
- * Apollo Kotlin 4 [HttpInterceptor] that records every GraphQL request/response into
+ * Apollo Kotlin [HttpInterceptor] (4.x and 5.x) that records every GraphQL request/response into
  * [NetworkLogger], regardless of which HTTP engine the `ApolloClient` runs on.
  *
  * The request body is buffered once (when its length is known and within the cap) and

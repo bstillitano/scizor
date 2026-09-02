@@ -18,7 +18,7 @@ codeScanner = "16.1.0"
 locationServices = "21.3.0"
 osmdroid = "6.1.20"
 ktor = "3.5.2"
-apollo = "4.3.1"
+apollo = "4.4.3"
 
 [libraries]
 core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }

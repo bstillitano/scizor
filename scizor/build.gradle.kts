@@ -78,9 +78,12 @@ dependencies {
     // dependency footprint — only apps that already use Ktor ever call it.
     compileOnly(libs.ktor.client.core)
 
-    // Optional: `Scizor.network.apolloInterceptor()` returns an Apollo Kotlin 4 HTTP
+    // Optional: `Scizor.network.apolloInterceptor()` returns an Apollo Kotlin HTTP
     // interceptor for hosts using Apollo on any engine. Same compileOnly deal as Ktor —
-    // only apps that already ship Apollo ever load the class.
+    // only apps that already ship Apollo ever load the class. Compiled against the
+    // latest 4.x on purpose: every symbol used is unchanged in 5.x (verified against
+    // 5.1.0), and building against the older major means the compiler stops us from
+    // ever reaching for a 5.x-only API.
     compileOnly(libs.apollo.runtime)
 
     testImplementation(libs.junit)

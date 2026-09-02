@@ -308,8 +308,8 @@ If your `ApolloClient` is built on a custom OkHttp client, `addInterceptor(Scizo
 on that client works just as well — pick one route, not both, or every operation is logged twice.
 
 `apollo-runtime` is a `compileOnly` dependency of Scizor, so Scizor never puts Apollo on your
-classpath. `apolloInterceptor()` requires Apollo Kotlin 4.x; on Apollo Kotlin 3.x (the
-`com.apollographql.apollo3` packages) use the OkHttp route above instead.
+classpath. `apolloInterceptor()` works with Apollo Kotlin 4.x and 5.x; on Apollo Kotlin 3.x
+(the `com.apollographql.apollo3` packages) use the OkHttp route above instead.
 
 ### Feature Flags
 
@@ -653,7 +653,7 @@ accidental one, and Scyther has the same limit.
 | `Scizor.invocationGesture` | `SHAKE` / `FLOATING_BUTTON` / `NONE` |
 | `Scizor.network.interceptor()` | OkHttp interceptor for logging |
 | `Scizor.network.ktorPlugin()` | Ktor client plugin for logging (non-OkHttp engines) |
-| `Scizor.network.apolloInterceptor()` | Apollo Kotlin 4 HTTP interceptor for logging |
+| `Scizor.network.apolloInterceptor()` | Apollo Kotlin 4.x/5.x HTTP interceptor for logging |
 | `Scizor.featureFlags` | `register`, `isEnabled`, `override` |
 | `Scizor.servers` | `configure`, `select`, `baseUrl` |
 | `Scizor.preferences` | Read/edit `SharedPreferences` |

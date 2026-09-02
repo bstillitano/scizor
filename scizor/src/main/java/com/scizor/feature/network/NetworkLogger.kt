@@ -50,7 +50,7 @@ object NetworkLogger {
     fun ktorPlugin(): ClientPlugin<Unit> = scizorKtorPlugin()
 
     /**
-     * An Apollo Kotlin 4 HTTP interceptor that records into this logger, for any
+     * An Apollo Kotlin HTTP interceptor (4.x and 5.x) that records into this logger, for any
      * `ApolloClient` regardless of engine:
      * `ApolloClient.Builder().addHttpInterceptor(Scizor.network.apolloInterceptor())`.
      * An Apollo client built on a custom OkHttp client can equally keep using
