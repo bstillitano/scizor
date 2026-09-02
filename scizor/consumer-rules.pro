@@ -11,6 +11,9 @@
 # consumer's minified build fails, blaming Scizor's packages.
 -dontwarn com.google.android.gms.**
 -dontwarn com.google.mlkit.**
+-dontwarn com.apollographql.apollo.**
+-dontwarn io.ktor.**
+-dontwarn kotlinx.io.**
 
 # Manifest-declared components — this service and ScizorActivity — are already kept by
 # the rules AAPT generates from the merged manifest, and their framework-override members
