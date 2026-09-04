@@ -59,6 +59,7 @@ dependencies {
     implementation(libs.compose.material3)
     implementation(libs.compose.material.icons)
     debugImplementation(libs.compose.ui.tooling)
+    debugImplementation(libs.compose.ui.test.manifest)
 
     // OpenStreetMap view for the Location Spoofer map (no API key required).
     implementation(libs.osmdroid.android)
@@ -87,6 +88,7 @@ dependencies {
     compileOnly(libs.apollo.runtime)
 
     testImplementation(libs.junit)
+    testImplementation(libs.compose.ui.test.junit4)
     testImplementation(libs.robolectric)
     testImplementation(libs.coroutines.test)
     testImplementation(libs.mockwebserver)

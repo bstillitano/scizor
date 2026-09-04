@@ -15,6 +15,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.scizor.ui.CopyMenuHost
 import com.scizor.ui.EmptyState
+import com.scizor.ui.KeyValueContent
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.Icons
 import com.scizor.ui.rememberSearchQuery
@@ -59,14 +60,7 @@ internal fun EnvironmentVariablesScreen(viewModel: EnvironmentVariablesViewModel
                     colors = scizorSegmentedColors(),
                     onClick = null,
                     onLongClick = onLongClick,
-                    trailingContent = {
-                        Text(
-                            text = value,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    },
-                    content = { Text(key) },
+                    content = { KeyValueContent(key = key, value = value) },
                 )
             }
         }

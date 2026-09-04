@@ -62,6 +62,10 @@ class SampleApp : Application() {
             "API_BASE_URL" to Scizor.servers.baseUrl(),
             "FLAVOR" to "sample",
             "FEATURE_SET" to "full",
+            // A value far too long to share its key's line, so the sample shows the
+            // wrapped arrangement the Environment Variables rows fall back to.
+            "DEVICE_ID" to "704f57b114c830e7424ca8cccdc6fde1a09d8a2103bafcf0c038319d5" +
+                "deff94c6b82e157b9a6b139f394fb35bb3d442ea1661e63a431674158a0bca76c7a7fbc",
         )
 
         Scizor.fcmToken = "demo-fcm-token-a1b2c3d4e5f6g7h8i9j0"

@@ -21,6 +21,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.scizor.ui.KeyValueContent
 import com.scizor.ui.ScizorListItem
 import com.scizor.ui.ScizorNavigator
 import com.scizor.ui.SectionHeader
@@ -118,14 +119,9 @@ private fun RowGroup(rows: List<Row>) {
             is Row.Value -> ScizorListItem(
                 shapes = shapes,
                 colors = scizorSegmentedColors(),
-                trailingContent = {
-                    Text(row.value, style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1, overflow = TextOverflow.Ellipsis)
-                },
                 onClick = null,
                 onLongClick = { clipboard.setText(AnnotatedString("${row.label}: ${row.value}")) },
-                content = { Text(row.label) },
+                content = { KeyValueContent(key = row.label, value = row.value) },
             )
             is Row.Link -> ScizorListItem(
                 onClick = row.onOpen,
