@@ -141,6 +141,19 @@ If that trade is not one you want, `v0.1.0` builds against stable Material 3 1.4
 unaffected. It reproduces the segmented look on the stable `ListItem` instead of using the
 Expressive component. When `material3` 1.5.0 ships stable this distinction disappears.
 
+### OkHttp version
+
+Scizor depends on **OkHttp 5.4.0** as an `implementation` dependency, so by the same
+highest-version rule your app runs OkHttp 5 once Scizor is added. If your app also carries
+OkHttp **4.x** companion artifacts (`okhttp-urlconnection`, `logging-interceptor`, and so on),
+align them to the same 5.x version. Mixed versions can compile and then fail at runtime:
+`okhttp-urlconnection` 4.9.2's `JavaNetCookieJar` calls `okhttp3.internal.Util`, a class OkHttp 5
+no longer contains, so it throws `NoClassDefFoundError: okhttp3/internal/Util` when it runs.
+
+```kotlin
+implementation("com.squareup.okhttp3:okhttp-urlconnection:5.4.0")
+```
+
 ## Installation
 
 Scizor is distributed via [JitPack](https://jitpack.io). Add the repository:
