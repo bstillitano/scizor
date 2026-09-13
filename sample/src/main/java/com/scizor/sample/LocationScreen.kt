@@ -48,8 +48,9 @@ fun LocationScreen() {
     var hasPermission by remember { mutableStateOf(hasLocationPermission(context)) }
     var location by remember { mutableStateOf<Location?>(null) }
 
-    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        hasPermission = granted
+    // Android 12+ lets the user grant only approximate location, so either permission counts.
+    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { grants ->
+        hasPermission = grants.values.any { it }
     }
 
     val locationManager = remember { context.getSystemService(Context.LOCATION_SERVICE) as? LocationManager }
@@ -57,13 +58,12 @@ fun LocationScreen() {
     DisposableEffect(hasPermission) {
         if (hasPermission && locationManager != null) {
             val listener = LocationListener { location = it }
-            runCatching {
-                bestLastKnown(locationManager)?.let { location = it }
-                LocationManager.GPS_PROVIDER.takeIf { locationManager.isProviderEnabled(it) }?.let {
-                    locationManager.requestLocationUpdates(it, 1000L, 0f, listener, Looper.getMainLooper())
-                }
-                LocationManager.NETWORK_PROVIDER.takeIf { locationManager.isProviderEnabled(it) }?.let {
-                    locationManager.requestLocationUpdates(it, 1000L, 0f, listener, Looper.getMainLooper())
+            bestLastKnown(context, locationManager)?.let { location = it }
+            allowedProviders(context).forEach {
+                runCatching {
+                    if (locationManager.isProviderEnabled(it)) {
+                        locationManager.requestLocationUpdates(it, 1000L, 0f, listener, Looper.getMainLooper())
+                    }
                 }
             }
             onDispose { runCatching { locationManager.removeUpdates(listener) } }
@@ -93,7 +93,7 @@ fun LocationScreen() {
             val rows = when {
                 !hasPermission -> listOf(
                     SampleRow.Action("Request location permission") {
-                        launcher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+                        launcher.launch(LOCATION_PERMISSIONS)
                     },
                 )
                 loc == null -> listOf(SampleRow.Info("Fetching location…"))
@@ -104,7 +104,7 @@ fun LocationScreen() {
                     SampleRow.Label("Altitude", "%.1f m".format(loc.altitude)),
                     SampleRow.Label("Updated", DateFormat.getTimeInstance().format(Date(loc.time))),
                     SampleRow.Action("Refresh location") {
-                        if (locationManager != null) bestLastKnown(locationManager)?.let { location = it }
+                        if (locationManager != null) bestLastKnown(context, locationManager)?.let { location = it }
                     },
                 )
             }
@@ -181,12 +181,24 @@ private fun LocationMap(location: Location) {
     }
 }
 
-private fun hasLocationPermission(context: Context): Boolean =
-    ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) ==
-        PackageManager.PERMISSION_GRANTED
+private val LOCATION_PERMISSIONS = arrayOf(
+    Manifest.permission.ACCESS_FINE_LOCATION,
+    Manifest.permission.ACCESS_COARSE_LOCATION,
+)
 
-private fun bestLastKnown(manager: LocationManager): Location? = runCatching {
-    listOf(LocationManager.GPS_PROVIDER, LocationManager.NETWORK_PROVIDER)
-        .mapNotNull { if (manager.isProviderEnabled(it)) manager.getLastKnownLocation(it) else null }
+private fun isGranted(context: Context, permission: String): Boolean =
+    ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
+
+private fun hasLocationPermission(context: Context): Boolean =
+    LOCATION_PERMISSIONS.any { isGranted(context, it) }
+
+// GPS needs FINE; the network provider works with COARSE alone.
+private fun allowedProviders(context: Context): List<String> = buildList {
+    if (isGranted(context, Manifest.permission.ACCESS_FINE_LOCATION)) add(LocationManager.GPS_PROVIDER)
+    if (hasLocationPermission(context)) add(LocationManager.NETWORK_PROVIDER)
+}
+
+private fun bestLastKnown(context: Context, manager: LocationManager): Location? =
+    allowedProviders(context)
+        .mapNotNull { runCatching { if (manager.isProviderEnabled(it)) manager.getLastKnownLocation(it) else null }.getOrNull() }
         .maxByOrNull { it.time }
-}.getOrNull()
