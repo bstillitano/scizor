@@ -174,7 +174,7 @@ Then add the toolkit:
 ```kotlin
 // app/build.gradle.kts
 dependencies {
-    implementation("com.github.bstillitano:scizor:v0.2.2")
+    implementation("com.github.bstillitano:scizor:v0.2.3")
 }
 ```
 
@@ -194,7 +194,7 @@ If you want nothing at all in your shipped app, use `debugImplementation` instea
 
 ```kotlin
 dependencies {
-    debugImplementation("com.github.bstillitano:scizor:v0.2.2")
+    debugImplementation("com.github.bstillitano:scizor:v0.2.3")
 }
 ```
 
@@ -573,7 +573,7 @@ unconditionally:
 
 ```kotlin
 dependencies {
-    implementation("com.github.bstillitano:scizor:v0.2.2")
+    implementation("com.github.bstillitano:scizor:v0.2.3")
 }
 ```
 
